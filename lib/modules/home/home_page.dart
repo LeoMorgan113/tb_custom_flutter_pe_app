@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:thingsboard_app/core/context/tb_context.dart';
 import 'package:thingsboard_app/core/context/tb_context_widget.dart';
-import 'package:thingsboard_app/modules/dashboard/dashboard.dart'
-    as dashboardUi;
+import 'package:thingsboard_app/modules/dashboard/dashboard.dart' as dashboardUi;
 import 'package:thingsboard_app/modules/dashboard/dashboards_grid.dart';
 import 'package:thingsboard_app/modules/tenant/tenants_widget.dart';
 import 'package:thingsboard_app/widgets/tb_app_bar.dart';
 import 'package:thingsboard_pe_client/thingsboard_client.dart';
+
+import '../qr_states/scan_page.dart';
 
 class HomePage extends TbContextWidget {
   HomePage(TbContext tbContext) : super(tbContext);
@@ -77,6 +78,7 @@ class _HomePageState extends TbContextState<HomePage>
       return _buildSysAdminHome(context);
     } else {
       return DashboardsGridWidget(tbContext);
+      // return ScanPage(tbContext);
     }
   }
 

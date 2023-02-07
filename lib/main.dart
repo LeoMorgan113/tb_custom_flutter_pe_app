@@ -136,6 +136,7 @@ class ThingsboardAppState extends State<ThingsboardApp>
     return WlThemeWidget(
       appRouter.tbContext,
       wlThemedWidgetBuilder: (context, data, wlParams) => MaterialApp(
+          debugShowCheckedModeBanner: false,
           localizationsDelegates: [
             S.delegate,
             GlobalMaterialLocalizations.delegate,
@@ -149,6 +150,7 @@ class ThingsboardAppState extends State<ThingsboardApp>
               controller: _mainPageViewController,
               first: MaterialApp(
                 key: mainAppKey,
+                debugShowCheckedModeBanner: false,
                 scaffoldMessengerKey: appRouter.tbContext.messengerKey,
                 localizationsDelegates: [
                   S.delegate,
@@ -166,6 +168,7 @@ class ThingsboardAppState extends State<ThingsboardApp>
               ),
               second: MaterialApp(
                 key: dashboardKey,
+                debugShowCheckedModeBanner: false,
                 // scaffoldMessengerKey: appRouter.tbContext.messengerKey,
                 localizationsDelegates: [
                   S.delegate,
