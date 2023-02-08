@@ -1,5 +1,6 @@
 abstract class ThingsboardAppConstants {
-  static final thingsBoardApiEndpoint = 'https://thingsboard.cloud';
+  // static final thingsBoardApiEndpoint = 'https://thingsboard.cloud';
+  static final thingsBoardApiEndpoint = 'http://login.darkblueiot.com/';
   static final thingsboardOAuth2CallbackUrlScheme =
       'org.thingsboard.pe.app.auth';
 
