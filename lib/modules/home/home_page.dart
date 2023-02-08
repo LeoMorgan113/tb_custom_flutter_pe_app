@@ -77,8 +77,8 @@ class _HomePageState extends TbContextState<HomePage>
     if (tbClient.isSystemAdmin()) {
       return _buildSysAdminHome(context);
     } else {
-      return DashboardsGridWidget(tbContext);
-      // return ScanPage(tbContext);
+      // return DashboardsGridWidget(tbContext);
+      return ScanPage(tbContext);
     }
   }
 

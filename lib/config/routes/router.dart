@@ -14,6 +14,8 @@ import 'package:thingsboard_app/modules/profile/profile_routes.dart';
 import 'package:thingsboard_app/modules/tenant/tenant_routes.dart';
 import 'package:thingsboard_app/utils/ui_utils_routes.dart';
 
+import '../../modules/qr_states/scan_routes.dart';
+
 class ThingsboardAppRouter {
   final router = FluroRouter();
   late final _tbContext = TbContext(router);
@@ -29,15 +31,16 @@ class ThingsboardAppRouter {
     });
     InitRoutes(_tbContext).registerRoutes();
     AuthRoutes(_tbContext).registerRoutes();
-    UiUtilsRoutes(_tbContext).registerRoutes();
+    // UiUtilsRoutes(_tbContext).registerRoutes();
     HomeRoutes(_tbContext).registerRoutes();
-    ProfileRoutes(_tbContext).registerRoutes();
+    ScanRoutes(_tbContext).registerRoutes();
+    // ProfileRoutes(_tbContext).registerRoutes();
     AssetRoutes(_tbContext).registerRoutes();
-    DeviceRoutes(_tbContext).registerRoutes();
-    AlarmRoutes(_tbContext).registerRoutes();
+    // DeviceRoutes(_tbContext).registerRoutes();
+    // AlarmRoutes(_tbContext).registerRoutes();
     DashboardRoutes(_tbContext).registerRoutes();
-    AuditLogsRoutes(_tbContext).registerRoutes();
-    CustomerRoutes(_tbContext).registerRoutes();
+    // AuditLogsRoutes(_tbContext).registerRoutes();
+    // CustomerRoutes(_tbContext).registerRoutes();
     TenantRoutes(_tbContext).registerRoutes();
   }
 

@@ -16,16 +16,16 @@ class TbMainNavigationItem {
 
   TbMainNavigationItem(
       {required this.page,
-      required this.title,
-      required this.icon,
-      required this.path});
+        required this.title,
+        required this.icon,
+        required this.path});
 
   static Map<Authority, Set<String>> mainPageStateMap = {
     Authority.SYS_ADMIN: Set.unmodifiable(['/home', '/more']),
     Authority.TENANT_ADMIN:
-        Set.unmodifiable(['/home', '/alarms', '/devices', '/more']),
+    Set.unmodifiable(['/home', '/more']),
     Authority.CUSTOMER_USER:
-        Set.unmodifiable(['/home', '/alarms', '/devices', '/more']),
+    Set.unmodifiable(['/home', '/more']),
   };
 
   static bool isMainPageState(TbContext tbContext, String path) {
@@ -42,8 +42,8 @@ class TbMainNavigationItem {
       List<TbMainNavigationItem> items = [
         TbMainNavigationItem(
             page: HomePage(tbContext),
-            title: 'Home',
-            icon: Icon(Icons.home),
+            title: 'QR-code',
+            icon: Icon(Icons.qr_code_2),
             path: '/home')
       ];
       switch (tbContext.tbClient.getAuthUser()!.authority) {
@@ -51,18 +51,18 @@ class TbMainNavigationItem {
           break;
         case Authority.TENANT_ADMIN:
         case Authority.CUSTOMER_USER:
-          items.addAll([
-            TbMainNavigationItem(
-                page: AlarmsPage(tbContext),
-                title: 'Alarms',
-                icon: Icon(Icons.notifications),
-                path: '/alarms'),
-            TbMainNavigationItem(
-                page: DevicesMainPage(tbContext),
-                title: 'Devices',
-                icon: Icon(Icons.devices_other),
-                path: '/devices')
-          ]);
+        // items.addAll([
+        //   TbMainNavigationItem(
+        //       page: AlarmsPage(tbContext),
+        //       title: 'Alarms',
+        //       icon: Icon(Icons.notifications),
+        //       path: '/alarms'),
+        //   TbMainNavigationItem(
+        //       page: DevicesMainPage(tbContext),
+        //       title: 'Devices',
+        //       icon: Icon(Icons.devices_other),
+        //       path: '/devices')
+        // ]);
           break;
         case Authority.REFRESH_TOKEN:
           break;
@@ -73,8 +73,8 @@ class TbMainNavigationItem {
       }
       items.add(TbMainNavigationItem(
           page: MorePage(tbContext),
-          title: 'More',
-          icon: Icon(Icons.menu),
+          title: 'Profile',
+          icon: Icon(Icons.person),
           path: '/more'));
       return items;
     } else {
@@ -89,12 +89,12 @@ class TbMainNavigationItem {
         case '/home':
           item.title = '${S.of(context).home}';
           break;
-        case '/alarms':
-          item.title = '${S.of(context).alarms}';
-          break;
-        case '/devices':
-          item.title = '${S.of(context).devices}';
-          break;
+      // case '/alarms':
+      //   item.title = '${S.of(context).alarms}';
+      //   break;
+      // case '/devices':
+      //   item.title = '${S.of(context).devices}';
+      //   break;
         case '/more':
           item.title = '${S.of(context).more}';
           break;
@@ -179,7 +179,7 @@ class _MainPageState extends TbPageState<MainPage>
                       _setIndex(index) /*_currentIndex = index*/,
                   items: _tabItems
                       .map((item) => BottomNavigationBarItem(
-                          icon: item.icon, label: item.title))
+                      icon: item.icon, label: item.title))
                       .toList()),
             )));
   }

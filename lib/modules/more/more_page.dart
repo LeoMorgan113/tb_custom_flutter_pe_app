@@ -19,22 +19,10 @@ class _MorePageState extends TbContextState<MorePage> {
         body: Container(
           padding: EdgeInsets.fromLTRB(16, 40, 16, 20),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.account_circle,
-                      size: 48, color: Color(0xFFAFAFAF)),
-                  Spacer(),
-                  IconButton(
-                      icon: Icon(Icons.settings, color: Color(0xFFAFAFAF)),
-                      onPressed: () async {
-                        await navigateTo('/profile');
-                        setState(() {});
-                      })
-                ],
-              ),
+              Icon(Icons.account_circle,
+                  size: 48, color: Color(0xFFAFAFAF)),
               SizedBox(height: 22),
               Text(_getUserDisplayName(),
                   style: TextStyle(
@@ -52,9 +40,9 @@ class _MorePageState extends TbContextState<MorePage> {
               SizedBox(height: 24),
               Divider(color: Color(0xFFEDEDED)),
               SizedBox(height: 8),
-              buildMoreMenuItems(context),
-              SizedBox(height: 8),
-              Divider(color: Color(0xFFEDEDED)),
+              // buildMoreMenuItems(context),
+              // SizedBox(height: 8),
+              // Divider(color: Color(0xFFEDEDED)),
               SizedBox(height: 8),
               GestureDetector(
                   behavior: HitTestBehavior.opaque,
@@ -62,7 +50,7 @@ class _MorePageState extends TbContextState<MorePage> {
                       height: 48,
                       child: Padding(
                           padding:
-                              EdgeInsets.symmetric(vertical: 0, horizontal: 18),
+                          EdgeInsets.symmetric(vertical: 0, horizontal: 18),
                           child: Row(mainAxisSize: MainAxisSize.max, children: [
                             Icon(Icons.logout, color: Color(0xFFE04B2F)),
                             SizedBox(width: 34),
@@ -77,17 +65,7 @@ class _MorePageState extends TbContextState<MorePage> {
                   onTap: () {
                     tbClient.logout(
                         requestConfig: RequestConfig(ignoreErrors: true));
-                  }),
-              Spacer(),
-              if (tbContext.wlService.showNameVersion == true)
-                Row(
-                  mainAxisSize: MainAxisSize.max,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Text(tbContext.wlService.platformNameAndVersion,
-                        style: TextStyle(fontSize: 12))
-                  ],
-                )
+                  })
             ],
           ),
         ));
@@ -95,7 +73,7 @@ class _MorePageState extends TbContextState<MorePage> {
 
   Widget buildMoreMenuItems(BuildContext context) {
     List<Widget> items =
-        MoreMenuItem.getItems(tbContext, context).map((menuItem) {
+    MoreMenuItem.getItems(tbContext, context).map((menuItem) {
       return GestureDetector(
           behavior: HitTestBehavior.opaque,
           child: Container(
