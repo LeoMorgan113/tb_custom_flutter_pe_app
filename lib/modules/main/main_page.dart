@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:thingsboard_app/core/context/tb_context.dart';
 import 'package:thingsboard_app/core/context/tb_context_widget.dart';
 import 'package:thingsboard_app/generated/l10n.dart';
-import 'package:thingsboard_app/modules/alarm/alarms_page.dart';
-import 'package:thingsboard_app/modules/device/devices_main_page.dart';
 import 'package:thingsboard_app/modules/home/home_page.dart';
 import 'package:thingsboard_app/modules/more/more_page.dart';
 import 'package:thingsboard_pe_client/thingsboard_client.dart';
@@ -51,18 +49,6 @@ class TbMainNavigationItem {
           break;
         case Authority.TENANT_ADMIN:
         case Authority.CUSTOMER_USER:
-        // items.addAll([
-        //   TbMainNavigationItem(
-        //       page: AlarmsPage(tbContext),
-        //       title: 'Alarms',
-        //       icon: Icon(Icons.notifications),
-        //       path: '/alarms'),
-        //   TbMainNavigationItem(
-        //       page: DevicesMainPage(tbContext),
-        //       title: 'Devices',
-        //       icon: Icon(Icons.devices_other),
-        //       path: '/devices')
-        // ]);
           break;
         case Authority.REFRESH_TOKEN:
           break;
@@ -89,12 +75,6 @@ class TbMainNavigationItem {
         case '/home':
           item.title = '${S.of(context).home}';
           break;
-      // case '/alarms':
-      //   item.title = '${S.of(context).alarms}';
-      //   break;
-      // case '/devices':
-      //   item.title = '${S.of(context).devices}';
-      //   break;
         case '/more':
           item.title = '${S.of(context).more}';
           break;
