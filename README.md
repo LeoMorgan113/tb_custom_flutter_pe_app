@@ -21,7 +21,7 @@ flutter build apk --no-tree-shake-icons
 ``
 
 - appbundle
-- 
+
 ``
 flutter build apk --no-tree-shake-icons
 ``
