@@ -30,6 +30,7 @@ flutter build apk --no-tree-shake-icons
 IOS:
 
 - ipa
+
 ``
 flutter build ipa --no-tree-shake-icons
 ``
