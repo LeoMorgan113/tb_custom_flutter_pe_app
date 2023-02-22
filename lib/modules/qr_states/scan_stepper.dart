@@ -1,20 +1,18 @@
+import 'dart:async';
 import 'dart:convert';
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
-import 'package:thingsboard_app/core/entity/entities_base.dart';
 import 'package:thingsboard_app/modules/qr_states/states/scan_finised.dart';
 import 'package:thingsboard_app/modules/qr_states/states/scan_item.dart';
 import 'package:thingsboard_pe_client/thingsboard_client.dart';
 
-// import '../../widgets/tb_progress_indicator.dart';
 import '../../core/context/tb_context.dart';
 import '../../widgets/tb_progress_indicator.dart';
 import 'states/scan_order.dart';
 import 'states/scan_user.dart';
 import 'package:http/http.dart' as http;
+import 'package:zebrascanner/zebrascanner.dart';
 
 enum Types { USER, ORDER, ITEM }
 
@@ -45,10 +43,67 @@ class _ScanStepperState extends State<ScanStepper> {
   late bool itemIdSet = false;
   bool _loading = true;
 
+  // Zebra app
+  String _platformVersion = 'Unknown';
+  dynamic map;
+  StreamSubscription? subscription;
+  String? eventData = "";
+
+
   @override
   void initState(){
     super.initState();
+    // to get device OS Version
+    initPlatformState();
+    // to get Barcode Events from Zebra Scanner
+    initBarcodeReceiver();
   }
+
+  @override
+  void dispose() {
+    super.dispose();
+    if (subscription != null) {
+      subscription!.cancel();
+    }
+  }
+
+
+  initBarcodeReceiver() {
+    subscription = Zebrascanner.getBarCodeEventStream.listen((barcodeData) {
+      setState(() {
+        map = barcodeData;
+        var _list = map.values.toList();
+
+        // print(map);
+        // // Barcode
+        // print(_list[0]);
+        // // BarcodeType
+        // print(_list[1]);
+        // // ScannerId
+        // print(_list[2]);
+
+        eventData = _list[0] + "-" + _list[1] + "-" + _list[2];
+      });
+    });
+  }
+
+  Future<void> initPlatformState() async {
+    String platformVersion;
+
+    try {
+      platformVersion = await Zebrascanner.platformVersion;
+    } on PlatformException {
+      platformVersion = 'Failed to get platform version.';
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _platformVersion = platformVersion;
+    });
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -82,6 +137,7 @@ class _ScanStepperState extends State<ScanStepper> {
                         )
                       : Row(
                           children: [
+                            Text('Scanned Barcode/Qrcode ' + eventData!),
                             if (_currentStep != 0)
                               Expanded(
                                 child: TextButton(
@@ -120,8 +176,9 @@ class _ScanStepperState extends State<ScanStepper> {
                                   child: const Text("Send request"),
                                 ),
                               ),
+
                           ],
-                        ));
+                        ),);
             },
             steps: <Step>[
               Step(
@@ -129,7 +186,7 @@ class _ScanStepperState extends State<ScanStepper> {
                 // content: _buildScanUser(),
                 content: ScanUser(
                     userQrCode: getUserQrCode,
-                    scanQrCodeCallback: scanQRCode,
+                    scanQrCodeCallback: openBarcodeScreen,
                     userValid: isUserValid,
                 ),
                 isActive: _currentStep == 0,
@@ -140,7 +197,7 @@ class _ScanStepperState extends State<ScanStepper> {
                 title: Text('Order'),
                 content: ScanOrder(
                     orderQrCode: getOrderQrCode,
-                    scanQrCodeCallback: scanQRCode,
+                    scanQrCodeCallback: openBarcodeScreen,
                     continueStep: continued,
                     commentCallback: setComment,),
                 isActive: _currentStep == 1,
@@ -151,7 +208,7 @@ class _ScanStepperState extends State<ScanStepper> {
                 title: Text('Item'),
                 content: ScanItem(
                     itemQrCode: getItemQrCode,
-                    scanQrCodeCallback: scanQRCode,
+                    scanQrCodeCallback: openBarcodeScreen,
                     itemCountCallback: setItemQuantity),
                 isActive: _currentStep == 2,
                 state:
@@ -212,12 +269,12 @@ class _ScanStepperState extends State<ScanStepper> {
 
 
   Future<dynamic> checkUser(String userId,{RequestConfig? requestConfig}) async{
-    // var id = 'bfc2fbf0-86b6-11ed-a5ef-ff73adaaed5c';
+    // var id = '296adab0-852b-11ed-8927-6933c7590d09';
     var id = userId;
     try{
       var response = await widget.tbClient.
       get("/api/wedel/user?azureId=${id.toString()}");
-
+      print(response);
       if(response.statusCode == 200){
         Map<String, dynamic> jsonMap  = jsonDecode(response.toString());
         var userId = jsonMap['userId']['id'];
@@ -229,6 +286,21 @@ class _ScanStepperState extends State<ScanStepper> {
     }
   }
 
+  //SCANNER FOR ZEBRA DEVICE
+  Future<void> openBarcodeScreen(Types type) async {
+    String? result;
+    // Platform messages may fail, so we use a try/catch PlatformException.
+    try {
+      result = await Zebrascanner.barcodeScreen;
+
+      setQrCode(result, type);
+    } on PlatformException {
+      result = 'Failed to open the screen';
+    }
+  }
+
+
+  // SCANNER FOR SMARTPHONE
   void scanQRCode(Types type) async {
     try {
       final qrCode = await FlutterBarcodeScanner.scanBarcode(
@@ -236,7 +308,7 @@ class _ScanStepperState extends State<ScanStepper> {
       if (!mounted) return;
 
       setQrCode(qrCode, type);
-
+    //
     } on PlatformException {
       getResult = 'Failed to scan QR Code.';
     }
@@ -279,8 +351,6 @@ class _ScanStepperState extends State<ScanStepper> {
   }
 
   continued() {
-    // print('getUserQrCode:  $getUserQrCode, getItemQrCode $getItemQrCode,'
-    //     '\ngetOrderQrCode $getOrderQrCode');
 
     _currentStep < 4
         ? setState(() {

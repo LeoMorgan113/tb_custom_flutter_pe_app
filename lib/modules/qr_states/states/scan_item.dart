@@ -17,14 +17,6 @@ class ScanItem extends StatefulWidget {
 class _ScanItemState extends State<ScanItem> {
   int simpleIntInput = 1;
 
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   setState(() {
-  //     widget.itemCountCallback(simpleIntInput);
-  //   });
-  // }
-
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -52,8 +44,8 @@ class _ScanItemState extends State<ScanItem> {
                         color: Color(0xFFFFFFFF),
                         child: InkWell(
                           splashColor: Color(0xFFDCDCDC),
-                          onTap: () {
-                            widget.scanQrCodeCallback(Types.ITEM);
+                          onTap: () async {
+                            await widget.scanQrCodeCallback(Types.ITEM);
                             setState(() {
                               widget.itemCountCallback(simpleIntInput);
                             });

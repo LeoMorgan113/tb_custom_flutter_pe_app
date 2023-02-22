@@ -71,8 +71,8 @@ class _ScanOrderState extends State<ScanOrder> {
                         color: Color(0xFFFFFFFF),
                         child: InkWell(
                           splashColor: Color(0xFFDCDCDC),
-                          onTap: () {
-                            widget.scanQrCodeCallback(Types.ORDER);
+                          onTap: () async {
+                            await widget.scanQrCodeCallback(Types.ORDER);
                           },
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,

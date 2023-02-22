@@ -43,8 +43,8 @@ class _ScanUserState extends State<ScanUser> {
                           color: Color(0xFFFFFFFF),
                           child: InkWell(
                             splashColor: Color(0xFFDCDCDC),
-                            onTap: () {
-                              widget.scanQrCodeCallback(Types.USER);
+                            onTap: ()async {
+                             await widget.scanQrCodeCallback(Types.USER);
                             },
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
