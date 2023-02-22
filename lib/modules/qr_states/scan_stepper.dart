@@ -137,7 +137,6 @@ class _ScanStepperState extends State<ScanStepper> {
                         )
                       : Row(
                           children: [
-                            Text('Scanned Barcode/Qrcode ' + eventData!),
                             if (_currentStep != 0)
                               Expanded(
                                 child: TextButton(
@@ -184,10 +183,16 @@ class _ScanStepperState extends State<ScanStepper> {
               Step(
                 title: Text('User'),
                 // content: _buildScanUser(),
-                content: ScanUser(
-                    userQrCode: getUserQrCode,
-                    scanQrCodeCallback: openBarcodeScreen,
-                    userValid: isUserValid,
+                content: Column(
+                  children: [
+                    ScanUser(
+                        userQrCode: getUserQrCode,
+                        scanQrCodeCallback: openBarcodeScreen,
+                        userValid: isUserValid,
+                    ),
+                    Text('Scanned Barcode/Qrcode ' + eventData!,
+                      style: TextStyle(color: Colors.green),)
+                  ],
                 ),
                 isActive: _currentStep == 0,
                 state:
