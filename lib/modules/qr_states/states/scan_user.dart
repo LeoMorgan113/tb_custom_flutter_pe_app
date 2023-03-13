@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../scan_stepper.dart';
 
 class ScanUser extends StatefulWidget {
-  final String userQrCode;
+  late String userQrCode;
   final Function(Types) scanQrCodeCallback;
   final bool userValid;
 
@@ -43,14 +43,25 @@ class _ScanUserState extends State<ScanUser> {
                           color: Color(0xFFFFFFFF),
                           child: InkWell(
                             splashColor: Color(0xFFDCDCDC),
-                            onTap: ()async {
-                             await widget.scanQrCodeCallback(Types.USER);
-                            },
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: <Widget>[
-                                Icon(Icons.qr_code_2, size: 180), // <-- Icon
-                              ],
+                            child: GestureDetector(
+
+                              onTapUp: (TapUpDetails)  {
+                                // await widget.scanQrCodeCallback(Types.USER);
+                                print('on tap UP');
+                                setState(() {
+                                  widget.userQrCode = '94499494';
+                                });
+                              },
+                              onTapDown: (TapDownDetails) {
+                                print('on tap DOWN');
+
+                              },
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: <Widget>[
+                                  Icon(Icons.qr_code_2, size: 180), // <-- Icon
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -70,19 +81,32 @@ class _ScanUserState extends State<ScanUser> {
                             height: 1.33),
                       ),
                     )),
-                if(!widget.userValid && widget.userQrCode.isNotEmpty)
+                // if(!widget.userValid && widget.userQrCode.isNotEmpty)
+                //   Container(
+                //       margin: const EdgeInsets.only(top: 20.0),
+                //       child: Center(
+                //         child: Text(
+                //           "User's QR is not valid",
+                //           style: TextStyle(
+                //               color: Color(0xFFD21616),
+                //               fontSize: 20,
+                //               fontWeight: FontWeight.normal,
+                //               height: 1.33),
+                //         ),
+                //       ))
+                // else
                   Container(
                       margin: const EdgeInsets.only(top: 20.0),
                       child: Center(
                         child: Text(
-                          "User's QR is not valid",
+                          "Scanned code: \n"+widget.userQrCode,
                           style: TextStyle(
-                              color: Color(0xFFD21616),
+                              color: Color(0xFF03b6fc),
                               fontSize: 20,
                               fontWeight: FontWeight.normal,
                               height: 1.33),
                         ),
-                      )),
+                      ))
               ]),
         ),
       );

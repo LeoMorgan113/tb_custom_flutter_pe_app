@@ -30,6 +30,12 @@ class ScanStepper extends StatefulWidget {
 }
 
 class _ScanStepperState extends State<ScanStepper> {
+  // zebra scan
+  static const MethodChannel methodChannel =
+  MethodChannel('com.darryncampbell.datawedgeflutter/command');
+  static const EventChannel scanChannel =
+  EventChannel('com.darryncampbell.datawedgeflutter/scan');
+
   var getResult = 'QR Code Result';
   var getUserQrCode = '', getOrderQrCode = '', getItemQrCode = '';
   int itemCount = 1;
@@ -45,9 +51,60 @@ class _ScanStepperState extends State<ScanStepper> {
   late bool itemIdSet = false;
   bool _loading = true;
 
+  Future<void> _sendDataWedgeCommand(String command, String parameter) async {
+    try {
+      String argumentAsJson =
+      jsonEncode({"command": command, "parameter": parameter});
+
+      await methodChannel.invokeMethod(
+          'sendDataWedgeCommandStringParameter', argumentAsJson);
+    } on PlatformException {
+      throw Exception('Failed to send command.');
+    }
+  }
+
+  Future<void> _createProfile(String profileName) async {
+    try {
+      await methodChannel.invokeMethod('createDataWedgeProfile', profileName);
+    } on PlatformException {
+      throw Exception('Failed to create profile.');
+    }
+  }
+
+  String _barcodeString = "";
+
   @override
   void initState(){
     super.initState();
+    scanChannel.receiveBroadcastStream().listen(_onEvent, onError: _onError);
+    _createProfile("ThingsBoardPEApp");
+  }
+
+  void _onEvent(event) {
+    setState(() {
+      Map barcodeScan = jsonDecode(event);
+      _barcodeString = barcodeScan['scanData'];
+    });
+  }
+
+  void _onError(Object error) {
+    setState(() {
+      _barcodeString = "Barcode: error";
+    });
+  }
+
+  void startScan() {
+    setState(() {
+      _sendDataWedgeCommand(
+          "com.symbol.datawedge.api.SOFT_SCAN_TRIGGER", "START_SCANNING");
+    });
+  }
+
+  void stopScan() {
+    setState(() {
+      _sendDataWedgeCommand(
+          "com.symbol.datawedge.api.SOFT_SCAN_TRIGGER", "STOP_SCANNING");
+    });
   }
 
   @override
@@ -98,7 +155,7 @@ class _ScanStepperState extends State<ScanStepper> {
                                 onPressed: isUserValid ?
                                 details.onStepContinue
                                     : null ,
-                                child: Text("Next"),
+                                child: Text("Next"+getUserQrCode),
                               ),
                             )
                           else if (_currentStep == 1)
