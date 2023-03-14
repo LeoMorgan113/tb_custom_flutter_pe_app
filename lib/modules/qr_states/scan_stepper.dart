@@ -3,13 +3,9 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
-import 'package:thingsboard_app/core/entity/entities_base.dart';
 import 'package:thingsboard_app/modules/qr_states/states/scan_finised.dart';
 import 'package:thingsboard_app/modules/qr_states/states/scan_item.dart';
 import 'package:thingsboard_pe_client/thingsboard_client.dart';
-
-// import '../../widgets/tb_progress_indicator.dart';
 import '../../core/context/tb_context.dart';
 import '../../widgets/tb_progress_indicator.dart';
 import 'states/scan_order.dart';
@@ -31,10 +27,10 @@ class ScanStepper extends StatefulWidget {
 
 class _ScanStepperState extends State<ScanStepper> {
   // zebra scan
-  static const MethodChannel methodChannel =
-  MethodChannel('com.darryncampbell.datawedgeflutter/command');
-  static const EventChannel scanChannel =
-  EventChannel('com.darryncampbell.datawedgeflutter/scan');
+  // static const MethodChannel methodChannel =
+  // MethodChannel('com.darryncampbell.datawedgeflutter/command');
+  // static const EventChannel scanChannel =
+  // EventChannel('com.darryncampbell.datawedgeflutter/scan');
 
   var getResult = 'QR Code Result';
   var getUserQrCode = '', getOrderQrCode = '', getItemQrCode = '';
@@ -51,61 +47,12 @@ class _ScanStepperState extends State<ScanStepper> {
   late bool itemIdSet = false;
   bool _loading = true;
 
-  Future<void> _sendDataWedgeCommand(String command, String parameter) async {
-    try {
-      String argumentAsJson =
-      jsonEncode({"command": command, "parameter": parameter});
-
-      await methodChannel.invokeMethod(
-          'sendDataWedgeCommandStringParameter', argumentAsJson);
-    } on PlatformException {
-      throw Exception('Failed to send command.');
-    }
-  }
-
-  Future<void> _createProfile(String profileName) async {
-    try {
-      await methodChannel.invokeMethod('createDataWedgeProfile', profileName);
-    } on PlatformException {
-      throw Exception('Failed to create profile.');
-    }
-  }
-
-  String _barcodeString = "";
 
   @override
   void initState(){
     super.initState();
-    scanChannel.receiveBroadcastStream().listen(_onEvent, onError: _onError);
-    _createProfile("ThingsBoardPEApp");
   }
 
-  void _onEvent(event) {
-    setState(() {
-      Map barcodeScan = jsonDecode(event);
-      _barcodeString = barcodeScan['scanData'];
-    });
-  }
-
-  void _onError(Object error) {
-    setState(() {
-      _barcodeString = "Barcode: error";
-    });
-  }
-
-  void startScan() {
-    setState(() {
-      _sendDataWedgeCommand(
-          "com.symbol.datawedge.api.SOFT_SCAN_TRIGGER", "START_SCANNING");
-    });
-  }
-
-  void stopScan() {
-    setState(() {
-      _sendDataWedgeCommand(
-          "com.symbol.datawedge.api.SOFT_SCAN_TRIGGER", "STOP_SCANNING");
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -155,7 +102,7 @@ class _ScanStepperState extends State<ScanStepper> {
                                 onPressed: isUserValid ?
                                 details.onStepContinue
                                     : null ,
-                                child: Text("Next"+getUserQrCode),
+                                child: Text("Next"),
                               ),
                             )
                           else if (_currentStep == 1)
@@ -245,11 +192,27 @@ class _ScanStepperState extends State<ScanStepper> {
     );
   }
 
-  setQrCode(code, type) {
-    setState(() async {
+
+  void scanQRCode(String qrCode, Types type) {
+    try {
+      // final qrCode = await FlutterBarcodeScanner.scanBarcode(
+      //     '#ff6666', 'Cancel', true, ScanMode.QR);
+      if (!mounted) return;
+
+      setQrCode(qrCode, type);
+
+    } on PlatformException {
+      getResult = 'Failed to scan QR Code.';
+    }
+  }
+
+  setQrCode(code, type) async {
+    if (type == Types.USER){
+      getUserQrCode = code;
+      userId = await checkUser(getUserQrCode);
+    }
+    setState(() {
       if (type == Types.USER) {
-        getUserQrCode = code;
-        userId = await checkUser(getUserQrCode);
         if(userId.isNotEmpty){
           setUserValidation(true);
         }else{
@@ -286,18 +249,6 @@ class _ScanStepperState extends State<ScanStepper> {
     }
   }
 
-  void scanQRCode(Types type) async {
-    try {
-      final qrCode = await FlutterBarcodeScanner.scanBarcode(
-          '#ff6666', 'Cancel', true, ScanMode.QR);
-      if (!mounted) return;
-
-      setQrCode(qrCode, type);
-
-    } on PlatformException {
-      getResult = 'Failed to scan QR Code.';
-    }
-  }
 
   setItemId(val){
     setState(() {
@@ -355,8 +306,7 @@ class _ScanStepperState extends State<ScanStepper> {
       } else {
         lastField = false;
       }
-    })
-        : null;
+    }) : null;
   }
 
   cancel() {

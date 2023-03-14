@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../scan_stepper.dart';
 
 class ScanUser extends StatefulWidget {
   late String userQrCode;
-  final Function(Types) scanQrCodeCallback;
+  final Function(String, Types) scanQrCodeCallback;
   final bool userValid;
 
   ScanUser({required this.userQrCode, required this.scanQrCodeCallback,
@@ -14,6 +17,70 @@ class ScanUser extends StatefulWidget {
 }
 
 class _ScanUserState extends State<ScanUser> {
+  String _barcodeString = "";
+  // zebra scan
+  static const MethodChannel methodChannel =
+  MethodChannel('com.qrscanner.datawedgeflutter/command');
+  static const EventChannel scanChannel =
+  EventChannel('com.qrscanner.datawedgeflutter/scan');
+
+
+  Future<void> _sendDataWedgeCommand(String command, String parameter) async {
+    try {
+      String argumentAsJson =
+      jsonEncode({"command": command, "parameter": parameter});
+
+      await methodChannel.invokeMethod(
+          'sendDataWedgeCommandStringParameter', argumentAsJson);
+    } on PlatformException {
+      throw Exception('Failed to send command.');
+    }
+  }
+
+  Future<void> _createProfile(String profileName) async {
+    try {
+      await methodChannel.invokeMethod('createDataWedgeProfile', profileName);
+    } on PlatformException {
+      throw Exception('Failed to create profile.');
+    }
+  }
+
+
+  @override
+  void initState(){
+    super.initState();
+    scanChannel.receiveBroadcastStream().listen(_onEvent, onError: _onError);
+    _createProfile("ThingsBoardPEApp");
+  }
+
+  void _onEvent(event) {
+    setState(() {
+      Map barcodeScan = jsonDecode(event);
+      _barcodeString = barcodeScan['scanData'];
+    });
+  }
+
+  void _onError(Object error) {
+    setState(() {
+      _barcodeString = "Error";
+    });
+  }
+
+  void startScan() {
+    setState(() {
+      _sendDataWedgeCommand(
+          "com.symbol.datawedge.api.SOFT_SCAN_TRIGGER", "START_SCANNING");
+    });
+  }
+
+  void stopScan() {
+    setState(() {
+      _sendDataWedgeCommand(
+          "com.symbol.datawedge.api.SOFT_SCAN_TRIGGER", "STOP_SCANNING");
+    });
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return
@@ -44,18 +111,17 @@ class _ScanUserState extends State<ScanUser> {
                           child: InkWell(
                             splashColor: Color(0xFFDCDCDC),
                             child: GestureDetector(
-
-                              onTapUp: (TapUpDetails)  {
-                                // await widget.scanQrCodeCallback(Types.USER);
-                                print('on tap UP');
+                              onTapDown: (tapDownDetails) {
+                                startScan();
+                              },
+                              onTapUp: (tapUpDetails) {
+                                stopScan();
                                 setState(() {
-                                  widget.userQrCode = '94499494';
+                                  widget.userQrCode = _barcodeString;
                                 });
+                                widget.scanQrCodeCallback(_barcodeString , Types.USER);
                               },
-                              onTapDown: (TapDownDetails) {
-                                print('on tap DOWN');
 
-                              },
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: <Widget>[
@@ -73,40 +139,64 @@ class _ScanUserState extends State<ScanUser> {
                     margin: const EdgeInsets.only(top: 20.0),
                     child: Center(
                       child: Text(
-                        "Scan User QR code",
+                        "Scan User's QR code",
                         style: TextStyle(
                             color: Color(0xFF424242),
-                            fontSize: 24,
+                            fontSize: 20,
                             fontWeight: FontWeight.normal,
                             height: 1.33),
                       ),
                     )),
-                // if(!widget.userValid && widget.userQrCode.isNotEmpty)
-                //   Container(
-                //       margin: const EdgeInsets.only(top: 20.0),
-                //       child: Center(
-                //         child: Text(
-                //           "User's QR is not valid",
-                //           style: TextStyle(
-                //               color: Color(0xFFD21616),
-                //               fontSize: 20,
-                //               fontWeight: FontWeight.normal,
-                //               height: 1.33),
-                //         ),
-                //       ))
-                // else
+                Container(
+                    margin: const EdgeInsets.only(top: 5.0),
+                    child: Center(
+                      child: Text(
+                        "Tap to scan",
+                        style: TextStyle(
+                            color: Color(0xFF737373),
+                            fontSize: 18,
+                            fontWeight: FontWeight.normal,
+                            height: 1.2),
+                      ),
+                    )),
+                Container(
+                    margin: const EdgeInsets.only(top: 10.0),
+                    child: Center(
+                      child: Text(
+                        "Scanned code: \n"+_barcodeString,
+                        style: TextStyle(
+                            color: Color(0xFF03b6fc),
+                            fontSize: 20,
+                            fontWeight: FontWeight.normal,
+                            height: 1.33),
+                      ),
+                    )),
+                if(!widget.userValid && widget.userQrCode.isNotEmpty)
                   Container(
                       margin: const EdgeInsets.only(top: 20.0),
                       child: Center(
                         child: Text(
-                          "Scanned code: \n"+widget.userQrCode,
+                          "User's QR is not valid. Please try again",
                           style: TextStyle(
-                              color: Color(0xFF03b6fc),
+                              color: Color(0xFFD21616),
                               fontSize: 20,
                               fontWeight: FontWeight.normal,
                               height: 1.33),
                         ),
                       ))
+                // else
+                //   Container(
+                //       margin: const EdgeInsets.only(top: 10.0),
+                //       child: Center(
+                //         child: Text(
+                //           "Scanned code: \n"+widget.userQrCode,
+                //           style: TextStyle(
+                //               color: Color(0xFF03b6fc),
+                //               fontSize: 20,
+                //               fontWeight: FontWeight.normal,
+                //               height: 1.33),
+                //         ),
+                //       ))
               ]),
         ),
       );

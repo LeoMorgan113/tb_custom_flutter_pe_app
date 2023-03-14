@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../scan_stepper.dart';
 
 class ScanOrder extends StatefulWidget {
-  final String orderQrCode;
-  final Function(Types) scanQrCodeCallback;
+  late final String orderQrCode;
+  final Function(String, Types) scanQrCodeCallback;
   final Function continueStep;
   final Function(String) commentCallback;
 
@@ -18,13 +21,70 @@ class _ScanOrderState extends State<ScanOrder> {
   final TextEditingController myController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isButtonDisabled = true;
+  String _barcodeString = "";
+  // zebra scan
+  static const MethodChannel methodChannel =
+  MethodChannel('com.qrscanner.datawedgeflutter/command');
+  static const EventChannel scanChannel =
+  EventChannel('com.qrscanner.datawedgeflutter/scan');
+
+
+  Future<void> _sendDataWedgeCommand(String command, String parameter) async {
+    try {
+      String argumentAsJson =
+      jsonEncode({"command": command, "parameter": parameter});
+
+      await methodChannel.invokeMethod(
+          'sendDataWedgeCommandStringParameter', argumentAsJson);
+    } on PlatformException {
+      throw Exception('Failed to send command.');
+    }
+  }
+
+  Future<void> _createProfile(String profileName) async {
+    try {
+      await methodChannel.invokeMethod('createDataWedgeProfile', profileName);
+    } on PlatformException {
+      throw Exception('Failed to create profile.');
+    }
+  }
 
   @override
   void initState(){
     super.initState();
 
     myController.addListener(_commentPrinted);
+    scanChannel.receiveBroadcastStream().listen(_onEvent, onError: _onError);
+    _createProfile("ThingsBoardPEApp");
   }
+
+  void _onEvent(event) {
+    setState(() {
+      Map barcodeScan = jsonDecode(event);
+      _barcodeString = barcodeScan['scanData'];
+    });
+  }
+
+  void _onError(Object error) {
+    setState(() {
+      _barcodeString = "Error";
+    });
+  }
+
+  void startScan() {
+    setState(() {
+      _sendDataWedgeCommand(
+          "com.symbol.datawedge.api.SOFT_SCAN_TRIGGER", "START_SCANNING");
+    });
+  }
+
+  void stopScan() {
+    setState(() {
+      _sendDataWedgeCommand(
+          "com.symbol.datawedge.api.SOFT_SCAN_TRIGGER", "STOP_SCANNING");
+    });
+  }
+
 
   void _commentPrinted(){
 
@@ -71,14 +131,26 @@ class _ScanOrderState extends State<ScanOrder> {
                         color: Color(0xFFFFFFFF),
                         child: InkWell(
                           splashColor: Color(0xFFDCDCDC),
-                          onTap: () async {
-                            await widget.scanQrCodeCallback(Types.ORDER);
-                          },
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: <Widget>[
-                              Icon(Icons.qr_code_2, size: 180), // <-- Icon
-                            ],
+                          // onTap: () async {
+                          //   await widget.scanQrCodeCallback(Types.ORDER);
+                          // },
+                          child: GestureDetector(
+                            onTapDown: (tapDownDetails) {
+                              startScan();
+                            },
+                            onTapUp: (tapUpDetails)  {
+                              stopScan();
+                              setState(() {
+                                widget.orderQrCode = _barcodeString;
+                              });
+                              widget.scanQrCodeCallback(_barcodeString, Types.ORDER);
+                            },
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: <Widget>[
+                                Icon(Icons.qr_code_2, size: 180), // <-- Icon
+                              ],
+                            ),
                           ),
                         ),
                       ),
