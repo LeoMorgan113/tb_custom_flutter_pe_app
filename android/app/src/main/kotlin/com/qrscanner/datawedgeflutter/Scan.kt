@@ -1,4 +1,4 @@
-package com.darryncampbell.datawedgeflutter
+package com.qrscanner.datawedgeflutter
 
 import org.json.JSONObject;
 

@@ -1,4 +1,4 @@
-package com.darryncampbell.datawedgeflutter
+package com.qrscanner.datawedgeflutter
 
 import android.content.Context
 import android.content.Intent

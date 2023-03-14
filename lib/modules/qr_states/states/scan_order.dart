@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import '../scan_stepper.dart';
 
 class ScanOrder extends StatefulWidget {
-  late final String orderQrCode;
+  late String orderQrCode;
   final Function(String, Types) scanQrCodeCallback;
   final Function continueStep;
   final Function(String) commentCallback;
@@ -55,7 +55,7 @@ class _ScanOrderState extends State<ScanOrder> {
 
     myController.addListener(_commentPrinted);
     scanChannel.receiveBroadcastStream().listen(_onEvent, onError: _onError);
-    _createProfile("ThingsBoardPEApp");
+    // _createProfile("ThingsBoardPEApp");
   }
 
   void _onEvent(event) {

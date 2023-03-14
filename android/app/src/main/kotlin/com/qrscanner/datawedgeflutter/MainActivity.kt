@@ -1,4 +1,4 @@
-package com.darryncampbell.datawedgeflutter
+package com.qrscanner.datawedgeflutter
 
 import android.content.*
 import android.os.Bundle
@@ -17,9 +17,9 @@ import io.flutter.plugins.GeneratedPluginRegistrant;
 //  https://github.com/flutter/flutter/blob/master/examples/platform_channel/android/app/src/main/java/com/example/platformchannel/MainActivity.java
 
 class MainActivity: FlutterActivity() {
-    private val COMMAND_CHANNEL = "com.darryncampbell.datawedgeflutter/command"
-    private val SCAN_CHANNEL = "com.darryncampbell.datawedgeflutter/scan"
-    private val PROFILE_INTENT_ACTION = "com.darryncampbell.datawedgeflutter.SCAN"
+    private val COMMAND_CHANNEL = "com.qrscanner.datawedgeflutter/command"
+    private val SCAN_CHANNEL = "com.qrscanner.datawedgeflutter/scan"
+    private val PROFILE_INTENT_ACTION = "com.qrscanner.datawedgeflutter.SCAN"
     private val PROFILE_INTENT_BROADCAST = "2"
 
     private val dwInterface = DWInterface()

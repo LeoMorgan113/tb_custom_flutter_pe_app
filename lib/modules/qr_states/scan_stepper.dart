@@ -234,9 +234,9 @@ class _ScanStepperState extends State<ScanStepper> {
   Future<dynamic> checkUser(String userId,{RequestConfig? requestConfig}) async{
     // var id = 'bfc2fbf0-86b6-11ed-a5ef-ff73adaaed5c';
     var id = userId;
+    // print('iddddd: $id');
     try{
-      var response = await widget.tbClient.
-      get("/api/wedel/user?azureId=${id.toString()}");
+      var response = await widget.tbClient.get("/api/wedel/user?azureId=${id.toString()}");
 
       if(response.statusCode == 200){
         Map<String, dynamic> jsonMap  = jsonDecode(response.toString());

@@ -6,7 +6,7 @@ import '../scan_stepper.dart';
 import 'package:quantity_input/quantity_input.dart';
 
 class ScanItem extends StatefulWidget {
-  late final String itemQrCode;
+  late String itemQrCode;
   final Function(String, Types) scanQrCodeCallback;
    final Function(int) itemCountCallback;
 
@@ -39,13 +39,13 @@ class _ScanItemState extends State<ScanItem> {
     }
   }
 
-  // Future<void> _createProfile(String profileName) async {
-  //   try {
-  //     await methodChannel.invokeMethod('createDataWedgeProfile', profileName);
-  //   } on PlatformException {
-  //     throw Exception('Failed to create profile.');
-  //   }
-  // }
+  Future<void> _createProfile(String profileName) async {
+    try {
+      await methodChannel.invokeMethod('createDataWedgeProfile', profileName);
+    } on PlatformException {
+      throw Exception('Failed to create profile.');
+    }
+  }
 
   @override
   void initState(){
@@ -168,7 +168,7 @@ class _ScanItemState extends State<ScanItem> {
                   margin: const EdgeInsets.only(top: 10.0),
                   child: Center(
                     child: Text(
-                      "Scanned code: \n"+widget.itemQrCode,
+                      "Scanned code: \n"+_barcodeString,
                       style: TextStyle(
                           color: Color(0xFF03b6fc),
                           fontSize: 20,
