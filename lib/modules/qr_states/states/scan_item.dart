@@ -22,9 +22,9 @@ class _ScanItemState extends State<ScanItem> {
   String _barcodeString = "";
   // zebra scan
   static const MethodChannel methodChannel =
-  MethodChannel('com.qrscanner.datawedgeflutter/command');
+  MethodChannel('org.thingsboard.pe.app/command');
   static const EventChannel scanChannel =
-  EventChannel('com.qrscanner.datawedgeflutter/scan');
+  EventChannel('org.thingsboard.pe.app/scan');
 
 
   Future<void> _sendDataWedgeCommand(String command, String parameter) async {

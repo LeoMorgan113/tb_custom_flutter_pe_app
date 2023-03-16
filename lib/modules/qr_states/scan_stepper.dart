@@ -193,13 +193,13 @@ class _ScanStepperState extends State<ScanStepper> {
   }
 
 
-  void scanQRCode(String qrCode, Types type) {
+  void scanQRCode(String qrCode, Types type) async {
     try {
       // final qrCode = await FlutterBarcodeScanner.scanBarcode(
       //     '#ff6666', 'Cancel', true, ScanMode.QR);
       if (!mounted) return;
-
-      setQrCode(qrCode, type);
+      print('scanQRCode $qrCode');
+      await setQrCode(qrCode, type);
 
     } on PlatformException {
       getResult = 'Failed to scan QR Code.';
@@ -213,6 +213,8 @@ class _ScanStepperState extends State<ScanStepper> {
     }
     setState(() {
       if (type == Types.USER) {
+        getUserQrCode = code;
+
         if(userId.isNotEmpty){
           setUserValidation(true);
         }else{

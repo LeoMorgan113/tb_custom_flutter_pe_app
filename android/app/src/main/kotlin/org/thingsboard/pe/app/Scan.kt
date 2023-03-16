@@ -1,4 +1,4 @@
-package com.qrscanner.datawedgeflutter
+package org.thingsboard.pe.app
 
 import org.json.JSONObject;
 

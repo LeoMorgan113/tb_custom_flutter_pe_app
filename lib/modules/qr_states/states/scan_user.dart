@@ -17,12 +17,12 @@ class ScanUser extends StatefulWidget {
 }
 
 class _ScanUserState extends State<ScanUser> {
-  String _barcodeString = "";
+  String _barcodeString = "null";
   // zebra scan
   static const MethodChannel methodChannel =
-  MethodChannel('com.qrscanner.datawedgeflutter/command');
+  MethodChannel('org.thingsboard.pe.app/command');
   static const EventChannel scanChannel =
-  EventChannel('com.qrscanner.datawedgeflutter/scan');
+  EventChannel('org.thingsboard.pe.app/scan');
 
 
   Future<void> _sendDataWedgeCommand(String command, String parameter) async {
@@ -53,10 +53,13 @@ class _ScanUserState extends State<ScanUser> {
     _createProfile("ThingsBoardPEApp");
   }
 
-  void _onEvent(event) {
+  void _onEvent(event) async {
     setState(() {
       Map barcodeScan = jsonDecode(event);
-      _barcodeString = barcodeScan['scanData'];
+      // _barcodeString = barcodeScan['scanData'];
+      _barcodeString = '32424';
+
+
     });
   }
 
@@ -74,10 +77,11 @@ class _ScanUserState extends State<ScanUser> {
   }
 
   void stopScan() {
-    setState(() {
+    setState((){
       _sendDataWedgeCommand(
           "com.symbol.datawedge.api.SOFT_SCAN_TRIGGER", "STOP_SCANNING");
     });
+    //
   }
 
 
@@ -91,50 +95,78 @@ class _ScanUserState extends State<ScanUser> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(height: 50),
-                Center(
-                  child: SizedBox.fromSize(
-                    size: Size(240, 240),
-
-                    child: Container(
+                GestureDetector(
+                  onTapDown: (TapDownDetails) {
+                    startScan();
+                  },
+                  onTapUp: (TapUpDetails) async {
+                    stopScan();
+                    widget.userQrCode = _barcodeString;
+                    await widget.scanQrCodeCallback(widget.userQrCode , Types.USER);
+                    setState(() {});
+                  },
+                  // The custom button
+                  child: Container(
+                      margin: EdgeInsets.all(8.0),
+                      padding: EdgeInsets.all(22.0),
                       decoration: BoxDecoration(
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0x27000000),
-                            spreadRadius: 4,
-                            blurRadius: 10,
-                          ),
-                        ],
+                        color: Color(0xFF599FEE),
+                        borderRadius: BorderRadius.circular(8.0),
                       ),
-                      child: ClipRect(
-                        child: Material(
-                          color: Color(0xFFFFFFFF),
-                          child: InkWell(
-                            splashColor: Color(0xFFDCDCDC),
-                            child: GestureDetector(
-                              onTapDown: (tapDownDetails) {
-                                startScan();
-                              },
-                              onTapUp: (tapUpDetails) {
-                                stopScan();
-                                setState(() {
-                                  widget.userQrCode = _barcodeString;
-                                });
-                                widget.scanQrCodeCallback(_barcodeString , Types.USER);
-                              },
-
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: <Widget>[
-                                  Icon(Icons.qr_code_2, size: 180), // <-- Icon
-                                ],
-                              ),
-                            ),
+                      child: Center(
+                        child: Text(
+                          "SCAN",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ),
-                    ),
-                  ),
+                      )),
                 ),
+
+                // Center(
+                //   child: SizedBox.fromSize(
+                //     size: Size(240, 240),
+                //
+                //     child: Container(
+                //       decoration: BoxDecoration(
+                //         boxShadow: [
+                //           BoxShadow(
+                //             color: Color(0x27000000),
+                //             spreadRadius: 4,
+                //             blurRadius: 10,
+                //           ),
+                //         ],
+                //       ),
+                //       child: ClipRect(
+                //         child: Material(
+                //           color: Color(0xFFFFFFFF),
+                //           child: InkWell(
+                //             splashColor: Color(0xFFDCDCDC),
+                //             child: GestureDetector(
+                //               onTapDown: (tapDownDetails) {
+                //                 startScan();
+                //               },
+                //               onTapUp: (tapUpDetails) {
+                //                 stopScan();
+                //                 setState(() {
+                //                   widget.userQrCode = _barcodeString;
+                //                 });
+                //                 widget.scanQrCodeCallback(_barcodeString , Types.USER);
+                //               },
+                //
+                //               child: Column(
+                //                 mainAxisAlignment: MainAxisAlignment.center,
+                //                 children: <Widget>[
+                //                   Icon(Icons.qr_code_2, size: 180), // <-- Icon
+                //                 ],
+                //               ),
+                //             ),
+                //           ),
+                //         ),
+                //       ),
+                //     ),
+                //   ),
+                // ),
                 Container(
                     margin: const EdgeInsets.only(top: 20.0),
                     child: Center(
@@ -163,7 +195,7 @@ class _ScanUserState extends State<ScanUser> {
                     margin: const EdgeInsets.only(top: 10.0),
                     child: Center(
                       child: Text(
-                        "Scanned code: \n"+_barcodeString,
+                        "Scanned code: \n${widget.userQrCode}",
                         style: TextStyle(
                             color: Color(0xFF03b6fc),
                             fontSize: 20,
