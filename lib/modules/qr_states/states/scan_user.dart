@@ -17,7 +17,9 @@ class ScanUser extends StatefulWidget {
 }
 
 class _ScanUserState extends State<ScanUser> {
-  String _barcodeString = "null";
+  String _barcodeString = "null11";
+  int _counter = 0;
+  String _EVENT = 'event';
   // zebra scan
   static const MethodChannel methodChannel =
   MethodChannel('org.thingsboard.pe.app/command');
@@ -48,18 +50,27 @@ class _ScanUserState extends State<ScanUser> {
 
   @override
   void initState(){
+    setState(() {
+      _counter = 0;
+    });
     super.initState();
     scanChannel.receiveBroadcastStream().listen(_onEvent, onError: _onError);
     _createProfile("ThingsBoardPEApp");
   }
 
-  void _onEvent(event) async {
+  void _onEvent(event) {
+    print("inside onEvent 0 $event");
     setState(() {
-      Map barcodeScan = jsonDecode(event);
-      // _barcodeString = barcodeScan['scanData'];
-      _barcodeString = '32424';
-
-
+      _EVENT = event;
+      _counter++;
+      print("inside onEvent 1 $event");
+      try {
+        Map barcodeScan = jsonDecode(event);
+        _barcodeString = barcodeScan['scanData'];
+      } catch (e) {
+        print('_onEvent Error: $e');
+        _barcodeString = "someError";
+      }
     });
   }
 
@@ -74,6 +85,9 @@ class _ScanUserState extends State<ScanUser> {
       _sendDataWedgeCommand(
           "com.symbol.datawedge.api.SOFT_SCAN_TRIGGER", "START_SCANNING");
     });
+    print("startScan 0");
+    _onEvent("{\"scanData\": \"bfc2fbf0-86b6-11ed-a5ef-ff73adaaed5c\"}");
+    // _onEvent({'scanData': 222});
   }
 
   void stopScan() {
@@ -97,12 +111,15 @@ class _ScanUserState extends State<ScanUser> {
                 SizedBox(height: 50),
                 GestureDetector(
                   onTapDown: (TapDownDetails) {
+                    print('onTapDown');
                     startScan();
                   },
                   onTapUp: (TapUpDetails) async {
+                    print('onTapUp');
                     stopScan();
                     widget.userQrCode = _barcodeString;
-                    await widget.scanQrCodeCallback(widget.userQrCode , Types.USER);
+                    print('onTapUp after $_barcodeString');
+                    // await widget.scanQrCodeCallback(widget.userQrCode , Types.USER);
                     setState(() {});
                   },
                   // The custom button
@@ -195,9 +212,22 @@ class _ScanUserState extends State<ScanUser> {
                     margin: const EdgeInsets.only(top: 10.0),
                     child: Center(
                       child: Text(
-                        "Scanned code: \n${widget.userQrCode}",
+                        "Scanned code: \n${widget.userQrCode}\n$_EVENT",
                         style: TextStyle(
                             color: Color(0xFF03b6fc),
+                            fontSize: 20,
+                            fontWeight: FontWeight.normal,
+                            height: 1.33),
+                      ),
+                    )),
+
+                Container(
+                    margin: const EdgeInsets.only(top: 10.0),
+                    child: Center(
+                      child: Text(
+                        "Counter: \n${_counter}",
+                        style: TextStyle(
+                            color: Color(0xff2f7a0a),
                             fontSize: 20,
                             fontWeight: FontWeight.normal,
                             height: 1.33),

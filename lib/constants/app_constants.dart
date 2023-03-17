@@ -1,7 +1,9 @@
 abstract class ThingsboardAppConstants {
   //todo
-  static final thingsBoardApiEndpoint = 'http://172.18.77.31:8080/';
-  // static final thingsBoardApiEndpoint = 'http://10.7.2.198:8080/';
+  // static final thingsBoardApiEndpoint = 'http://172.18.77.31:8080/';
+
+  // WEDEL
+  static final thingsBoardApiEndpoint = 'http://10.7.2.198:8080/';
   // static final thingsBoardApiEndpoint = 'https://thingsboard.cloud/';
 
   static final thingsboardOAuth2CallbackUrlScheme =

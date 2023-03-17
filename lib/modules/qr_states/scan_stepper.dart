@@ -133,7 +133,7 @@ class _ScanStepperState extends State<ScanStepper> {
                     // content: _buildScanUser(),
                     content: ScanUser(
                       userQrCode: getUserQrCode,
-                      scanQrCodeCallback: scanQRCode,
+                      scanQrCodeCallback: setQrCode,
                       userValid: isUserValid,
                     ),
                     isActive: _currentStep == 0,
@@ -144,7 +144,7 @@ class _ScanStepperState extends State<ScanStepper> {
                     title: Text('Order'),
                     content: ScanOrder(
                       orderQrCode: getOrderQrCode,
-                      scanQrCodeCallback: scanQRCode,
+                      scanQrCodeCallback: setQrCode,
                       continueStep: continued,
                       commentCallback: setComment,),
                     isActive: _currentStep == 1,
@@ -155,7 +155,7 @@ class _ScanStepperState extends State<ScanStepper> {
                     title: Text('Item'),
                     content: ScanItem(
                         itemQrCode: getItemQrCode,
-                        scanQrCodeCallback: scanQRCode,
+                        scanQrCodeCallback: setQrCode,
                         itemCountCallback: setItemQuantity),
                     isActive: _currentStep == 2,
                     state:
@@ -199,14 +199,15 @@ class _ScanStepperState extends State<ScanStepper> {
       //     '#ff6666', 'Cancel', true, ScanMode.QR);
       if (!mounted) return;
       print('scanQRCode $qrCode');
-      await setQrCode(qrCode, type);
+      // await setQrCode(qrCode, type);
 
     } on PlatformException {
       getResult = 'Failed to scan QR Code.';
     }
   }
 
-  setQrCode(code, type) async {
+  void setQrCode(code, type) async {
+    // print('scanQRCode $code');
     if (type == Types.USER){
       getUserQrCode = code;
       userId = await checkUser(getUserQrCode);

@@ -25,47 +25,6 @@ class MainActivity: FlutterActivity() {
 
     private val dwInterface = DWInterface()
 
-//    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
-//        GeneratedPluginRegistrant.registerWith(flutterEngine)
-//        EventChannel(flutterEngine.dartExecutor, SCAN_CHANNEL).setStreamHandler(
-//            object : StreamHandler {
-//                private var dataWedgeBroadcastReceiver: BroadcastReceiver? = null
-//                override fun onListen(arguments: Any?, events: EventSink?) {
-//                    dataWedgeBroadcastReceiver = createDataWedgeBroadcastReceiver(events)
-//                    val intentFilter = IntentFilter()
-//                    intentFilter.addAction(PROFILE_INTENT_ACTION)
-//                    intentFilter.addAction(DWInterface.DATAWEDGE_RETURN_ACTION)
-//                    intentFilter.addCategory(DWInterface.DATAWEDGE_RETURN_CATEGORY)
-//                    registerReceiver(
-//                        dataWedgeBroadcastReceiver, intentFilter)
-//                }
-//
-//                override fun onCancel(arguments: Any?) {
-//                    unregisterReceiver(dataWedgeBroadcastReceiver)
-//                    dataWedgeBroadcastReceiver = null
-//                }
-//            }
-//        )
-//
-//        MethodChannel(flutterEngine.dartExecutor, COMMAND_CHANNEL).setMethodCallHandler { call, result ->
-//            if (call.method == "sendDataWedgeCommandStringParameter")
-//            {
-//                val arguments = JSONObject(call.arguments.toString())
-//                val command: String = arguments.get("command") as String
-//                val parameter: String = arguments.get("parameter") as String
-//                dwInterface.sendCommandString(applicationContext, command, parameter)
-//                //  result.success(0);  //  DataWedge does not return responses
-//            }
-//            else if (call.method == "createDataWedgeProfile")
-//            {
-//                createDataWedgeProfile(call.arguments.toString())
-//            }
-//            else {
-//                result.notImplemented()
-//            }
-//        }
-//    }
-
     private fun createDataWedgeBroadcastReceiver(events: EventSink?): BroadcastReceiver? {
         return object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
