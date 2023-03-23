@@ -86,7 +86,7 @@ class _ScanUserState extends State<ScanUser> {
           "com.symbol.datawedge.api.SOFT_SCAN_TRIGGER", "START_SCANNING");
     });
     print("startScan 0");
-    _onEvent("{\"scanData\": \"bfc2fbf0-86b6-11ed-a5ef-ff73adaaed5c\"}");
+    // _onEvent("{\"scanData\": \"bfc2fbf0-86b6-11ed-a5ef-ff73adaaed5c\"}");
     // _onEvent({'scanData': 222});
   }
 
