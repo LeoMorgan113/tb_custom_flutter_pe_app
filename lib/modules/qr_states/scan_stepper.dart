@@ -53,27 +53,16 @@ class _ScanStepperState extends State<ScanStepper> {
   @override
   void initState(){
     super.initState();
-    // _currentType = Types.USER;
     Stream<dynamic> user = scanChannel.receiveBroadcastStream();
     user.listen(_onEvent, onError: _onError);
     _createProfile("ThingsBoardPEApp");
   }
 
   void _onEvent(event) {
-    print("inside onEvent 0 $_currentType");
     setState(() {
-      // _EVENT = event;
-      // _counter++;
-      print("inside onEvent 1 $event");
-      // try {
-
       Map barcodeScan = jsonDecode(event);
       _barcodeString = barcodeScan['scanData'];
       setQrCode(_barcodeString, _currentType);
-      // } catch (e) {
-      //   print('_onEvent Error: $e');
-      //   _barcodeString = "someError";
-      // }
     });
   }
 
@@ -88,11 +77,7 @@ class _ScanStepperState extends State<ScanStepper> {
       _sendDataWedgeCommand(
           "com.symbol.datawedge.api.SOFT_SCAN_TRIGGER", "START_SCANNING");
       _currentType = type;
-      print('Type in start scan: $type');
     });
-    print("startScan 0");
-    // _onEvent("{\"scanData\": \"bfc2fbf0-86b6-11ed-a5ef-ff73adaaed5c\"}");
-    // _onEvent({'scanData': 222});
   }
 
   void stopScan() {
@@ -100,7 +85,6 @@ class _ScanStepperState extends State<ScanStepper> {
       _sendDataWedgeCommand(
           "com.symbol.datawedge.api.SOFT_SCAN_TRIGGER", "STOP_SCANNING");
     });
-    //
   }
 
 
@@ -123,10 +107,6 @@ class _ScanStepperState extends State<ScanStepper> {
       throw Exception('Failed to create profile.');
     }
   }
-
-
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -211,10 +191,8 @@ class _ScanStepperState extends State<ScanStepper> {
                 steps: <Step>[
                   Step(
                     title: Text(''),
-                    // content: _buildScanUser(),
                     content: ScanUser(
                       userQrCode: _barcodeString,
-                      // scanQrCodeCallback: setQrCode,
                       startScan: startScan,
                       stopScan: stopScan,
                       userValid: isUserValid,
@@ -278,18 +256,18 @@ class _ScanStepperState extends State<ScanStepper> {
   }
 
 
-  void scanQRCode(String qrCode, Types type) async {
-    try {
-      // final qrCode = await FlutterBarcodeScanner.scanBarcode(
-      //     '#ff6666', 'Cancel', true, ScanMode.QR);
-      if (!mounted) return;
-      print('scanQRCode $qrCode');
-      // await setQrCode(qrCode, type);
-
-    } on PlatformException {
-      getResult = 'Failed to scan QR Code.';
-    }
-  }
+  // void scanQRCode(String qrCode, Types type) async {
+  //   try {
+  //     // final qrCode = await FlutterBarcodeScanner.scanBarcode(
+  //     //     '#ff6666', 'Cancel', true, ScanMode.QR);
+  //     if (!mounted) return;
+  //     print('scanQRCode $qrCode');
+  //     // await setQrCode(qrCode, type);
+  //
+  //   } on PlatformException {
+  //     getResult = 'Failed to scan QR Code.';
+  //   }
+  // }
 
   void setQrCode(code, type) async {
     // print('scanQRCode $code');
@@ -322,7 +300,6 @@ class _ScanStepperState extends State<ScanStepper> {
   Future<dynamic> checkUser(String userId,{RequestConfig? requestConfig}) async{
     // var id = 'bfc2fbf0-86b6-11ed-a5ef-ff73adaaed5c';
     var id = userId;
-    // print('iddddd: $id');
     try{
       var response = await widget.tbClient.get("/api/wedel/user?azureId=${id.toString()}");
 
@@ -375,9 +352,6 @@ class _ScanStepperState extends State<ScanStepper> {
   }
 
   continued() {
-    // print('getUserQrCode:  $getUserQrCode, getItemQrCode $getItemQrCode,'
-    //     '\ngetOrderQrCode $getOrderQrCode');
-
     _currentStep < 4
         ? setState(() {
       _currentStep += 1;
