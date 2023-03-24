@@ -53,15 +53,32 @@ class _ScanStepperState extends State<ScanStepper> {
   @override
   void initState(){
     super.initState();
-    Stream<dynamic> user = scanChannel.receiveBroadcastStream();
-    user.listen(_onEvent, onError: _onError);
+    _currentType = Types.USER;
+    scanChannel.receiveBroadcastStream().listen(_onEvent, onError: _onError);
     _createProfile("ThingsBoardPEApp");
+  }
+
+  @override
+  void dispose(){
+    super.dispose();
   }
 
   void _onEvent(event) {
     setState(() {
       Map barcodeScan = jsonDecode(event);
       _barcodeString = barcodeScan['scanData'];
+
+      switch(_currentStep){
+        case 0:
+          _currentType = Types.USER;
+          break;
+        case 1:
+          _currentType = Types.ORDER;
+          break;
+        case 2:
+          _currentType = Types.ITEM;
+          break;
+      }
       setQrCode(_barcodeString, _currentType);
     });
   }
@@ -72,11 +89,10 @@ class _ScanStepperState extends State<ScanStepper> {
     });
   }
 
-  void startScan(Types type) {
+  void startScan() {
     setState(() {
       _sendDataWedgeCommand(
           "com.symbol.datawedge.api.SOFT_SCAN_TRIGGER", "START_SCANNING");
-      _currentType = type;
     });
   }
 
@@ -127,13 +143,14 @@ class _ScanStepperState extends State<ScanStepper> {
                       child: lastField
                           ? Row(
                         children: [
-                          Expanded(
-                            child: TextButton(
-                                onPressed: details.onStepCancel,
-                                child: const Text(
-                                  "Back",
-                                )),
-                          ),
+                          if(!_loading)
+                            Expanded(
+                              child: TextButton(
+                                  onPressed: details.onStepCancel,
+                                  child: const Text(
+                                    "Back",
+                                  )),
+                            ),
                           if(!_loading)
                             Expanded(
                               child: ElevatedButton(
@@ -229,7 +246,7 @@ class _ScanStepperState extends State<ScanStepper> {
                     content:
                     _loading ?
                     SizedBox(
-                      height: 500,
+                      height: 200,
                       child: Column(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -256,21 +273,7 @@ class _ScanStepperState extends State<ScanStepper> {
   }
 
 
-  // void scanQRCode(String qrCode, Types type) async {
-  //   try {
-  //     // final qrCode = await FlutterBarcodeScanner.scanBarcode(
-  //     //     '#ff6666', 'Cancel', true, ScanMode.QR);
-  //     if (!mounted) return;
-  //     print('scanQRCode $qrCode');
-  //     // await setQrCode(qrCode, type);
-  //
-  //   } on PlatformException {
-  //     getResult = 'Failed to scan QR Code.';
-  //   }
-  // }
-
   void setQrCode(code, type) async {
-    // print('scanQRCode $code');
     if (type == Types.USER){
       getUserQrCode = code;
       userId = await checkUser(getUserQrCode);

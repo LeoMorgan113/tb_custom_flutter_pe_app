@@ -6,7 +6,7 @@ import 'package:quantity_input/quantity_input.dart';
 class ScanItem extends StatefulWidget {
   late String itemQrCode;
   final Function(int) itemCountCallback;
-  final Function(Types) startScan;
+  final Function() startScan;
   final Function() stopScan;
 
   ScanItem({required this.itemQrCode, required this.startScan,
@@ -55,11 +55,9 @@ class _ScanItemState extends State<ScanItem> {
                       borderRadius: BorderRadius.all(Radius.circular(4))),
                   child: GestureDetector(
                     onTapDown: (_) {
-                      print('onTapDown');
-                      widget.startScan(Types.ITEM);
+                      widget.startScan();
                     },
                     onTapUp: (_) async {
-                      print('onTapUp');
                       widget.stopScan();
                     },
                     child: ElevatedButton.icon(

@@ -8,7 +8,7 @@ class ScanOrder extends StatefulWidget {
   late String orderQrCode;
   final Function continueStep;
   final Function(String) commentCallback;
-  final Function(Types) startScan;
+  final Function() startScan;
   final Function() stopScan;
 
   ScanOrder({required this.orderQrCode, required this.startScan,
@@ -76,18 +76,12 @@ class _ScanOrderState extends State<ScanOrder> {
                       borderRadius: BorderRadius.all(Radius.circular(4))),
                   child: GestureDetector(
                     onTapDown: (_) {
-                      print('onTapDown');
-                      widget.startScan(Types.ORDER);
+                      widget.startScan();
                     },
                     onTapUp: (_) async {
-                      print('onTapUp');
                       widget.stopScan();
                     },
                     child: ElevatedButton.icon(
-                      // padding: EdgeInsets.zero,
-                      // style: ButtonStyle(
-                      //     backgroundColor:
-                      //         MaterialStateProperty.all(Colors.amber)),
                       onPressed: () => {},
                       label: Text(
                         'Scan',

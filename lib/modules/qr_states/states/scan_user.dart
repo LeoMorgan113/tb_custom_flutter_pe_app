@@ -5,7 +5,7 @@ import '../scan_stepper.dart';
 class ScanUser extends StatefulWidget {
   late String userQrCode;
   final bool userValid;
-  final Function(Types) startScan;
+  final Function() startScan;
   final Function() stopScan;
 
   ScanUser(
@@ -53,11 +53,9 @@ class _ScanUserState extends State<ScanUser> {
                       borderRadius: BorderRadius.all(Radius.circular(4))),
                   child: GestureDetector(
                     onTapDown: (_) {
-                      print('onTapDown');
-                      widget.startScan(Types.USER);
+                      widget.startScan();
                     },
                     onTapUp: (_) async {
-                      print('onTapUp');
                       widget.stopScan();
                     },
                     child: ElevatedButton.icon(
