@@ -21,7 +21,6 @@ class _ScanFinishedState extends State<ScanFinished>{
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-            SizedBox(height: 150),
               if (widget.status)
                 Column(
                   children: [

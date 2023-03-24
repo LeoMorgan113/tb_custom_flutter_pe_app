@@ -6,12 +6,14 @@ import '../scan_stepper.dart';
 
 class ScanOrder extends StatefulWidget {
   late String orderQrCode;
-  final Function(String, Types) scanQrCodeCallback;
   final Function continueStep;
   final Function(String) commentCallback;
+  final Function(Types) startScan;
+  final Function() stopScan;
 
-  ScanOrder({required this.orderQrCode, required this.scanQrCodeCallback,
-    required this.continueStep, required this.commentCallback});
+  ScanOrder({required this.orderQrCode, required this.startScan,
+    required this.stopScan, required this.continueStep,
+    required this.commentCallback});
 
   @override
   State<ScanOrder> createState() => _ScanOrderState();
@@ -21,73 +23,15 @@ class _ScanOrderState extends State<ScanOrder> {
   final TextEditingController myController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isButtonDisabled = true;
-  String _barcodeString = "";
-  // zebra scan
-  static const MethodChannel methodChannel =
-  MethodChannel('org.thingsboard.pe.app/command');
-  static const EventChannel scanChannel =
-  EventChannel('org.thingsboard.pe.app/scan');
-
-
-  Future<void> _sendDataWedgeCommand(String command, String parameter) async {
-    try {
-      String argumentAsJson =
-      jsonEncode({"command": command, "parameter": parameter});
-
-      await methodChannel.invokeMethod(
-          'sendDataWedgeCommandStringParameter', argumentAsJson);
-    } on PlatformException {
-      throw Exception('Failed to send command.');
-    }
-  }
-
-  Future<void> _createProfile(String profileName) async {
-    try {
-      await methodChannel.invokeMethod('createDataWedgeProfile', profileName);
-    } on PlatformException {
-      throw Exception('Failed to create profile.');
-    }
-  }
 
   @override
   void initState(){
     super.initState();
-
     myController.addListener(_commentPrinted);
-    scanChannel.receiveBroadcastStream().listen(_onEvent, onError: _onError);
-    // _createProfile("ThingsBoardPEApp");
-  }
-
-  void _onEvent(event) {
-    setState(() {
-      Map barcodeScan = jsonDecode(event);
-      _barcodeString = barcodeScan['scanData'];
-    });
-  }
-
-  void _onError(Object error) {
-    setState(() {
-      _barcodeString = "Error";
-    });
-  }
-
-  void startScan() {
-    setState(() {
-      _sendDataWedgeCommand(
-          "com.symbol.datawedge.api.SOFT_SCAN_TRIGGER", "START_SCANNING");
-    });
-  }
-
-  void stopScan() {
-    setState(() {
-      _sendDataWedgeCommand(
-          "com.symbol.datawedge.api.SOFT_SCAN_TRIGGER", "STOP_SCANNING");
-    });
   }
 
 
   void _commentPrinted(){
-
     if(myController.text.isNotEmpty){
       widget.commentCallback(myController.text);
       _isButtonDisabled = false;
@@ -111,66 +55,75 @@ class _ScanOrderState extends State<ScanOrder> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SizedBox(height: 50),
-              Center(
-                child: SizedBox.fromSize(
-                  size: Size(240, 240),
-
-                  child: Container(
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: Color(0x27000000),
-                          spreadRadius: 4,
-                          blurRadius: 10,
-                        ),
-                      ],
+              Container(
+                  margin: const EdgeInsets.only(bottom: 15.0),
+                  child: Center(
+                    child: Text(
+                      "Order's QR code",
+                      style: TextStyle(
+                          color: Color(0xFF424242),
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          height: 1.33),
                     ),
-                    child: ClipRect(
-                      child: Material(
-                        color: Color(0xFFFFFFFF),
-                        child: InkWell(
-                          splashColor: Color(0xFFDCDCDC),
-                          // onTap: () async {
-                          //   await widget.scanQrCodeCallback(Types.ORDER);
-                          // },
-                          child: GestureDetector(
-                            onTapDown: (tapDownDetails) {
-                              startScan();
-                            },
-                            onTapUp: (tapUpDetails)  {
-                              stopScan();
-                              setState(() {
-                                widget.orderQrCode = _barcodeString;
-                              });
-                              widget.scanQrCodeCallback(_barcodeString, Types.ORDER);
-                            },
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: <Widget>[
-                                Icon(Icons.qr_code_2, size: 180), // <-- Icon
-                              ],
-                            ),
-                          ),
-                        ),
+                  )),
+              Center(
+                child: Container(
+                  height: 50,
+                  width: MediaQuery.of(context).size.width,
+                  margin: EdgeInsets.only(left: 10),
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.all(Radius.circular(4))),
+                  child: GestureDetector(
+                    onTapDown: (_) {
+                      print('onTapDown');
+                      widget.startScan(Types.ORDER);
+                    },
+                    onTapUp: (_) async {
+                      print('onTapUp');
+                      widget.stopScan();
+                    },
+                    child: ElevatedButton.icon(
+                      // padding: EdgeInsets.zero,
+                      // style: ButtonStyle(
+                      //     backgroundColor:
+                      //         MaterialStateProperty.all(Colors.amber)),
+                      onPressed: () => {},
+                      label: Text(
+                        'Scan',
+                        style: TextStyle(fontSize: 20),
                       ),
+                      icon: Icon(Icons.qr_code_2, size: 28),
                     ),
                   ),
                 ),
               ),
               Container(
-                  margin: const EdgeInsets.only(top: 20.0),
+                  margin: const EdgeInsets.only(top: 5.0),
                   child: Center(
                     child: Text(
-                      "Scan Order QR code",
+                      "Tap to scan",
                       style: TextStyle(
-                          color: Color(0xFF424242),
-                          fontSize: 24,
+                          color: Color(0xFF737373),
+                          fontSize: 18,
                           fontWeight: FontWeight.normal,
-                          height: 1.33),
+                          height: 1.2),
                     ),
                   )),
-              // Text((widget.orderQrCode != '-1').toString()),
+              if (widget.orderQrCode.isNotEmpty)
+                Container(
+                    margin: const EdgeInsets.only(top: 10.0),
+                    child: Center(
+                      child: Text(
+                        "Scanned code: \n${widget.orderQrCode}",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            color: Color(0xFF03b6fc),
+                            fontSize: 20,
+                            fontWeight: FontWeight.normal,
+                            height: 1.33),
+                      ),
+                    )),
               Container(
                   margin: const EdgeInsets.only(top: 10.0),
                   child: SizedBox(

@@ -27,10 +27,10 @@ class ScanStepper extends StatefulWidget {
 
 class _ScanStepperState extends State<ScanStepper> {
   // zebra scan
-  // static const MethodChannel methodChannel =
-  // MethodChannel('com.darryncampbell.datawedgeflutter/command');
-  // static const EventChannel scanChannel =
-  // EventChannel('com.darryncampbell.datawedgeflutter/scan');
+  static const MethodChannel methodChannel =
+  MethodChannel('org.thingsboard.pe.app/command');
+  static const EventChannel scanChannel =
+  EventChannel('org.thingsboard.pe.app/scan');
 
   var getResult = 'QR Code Result';
   var getUserQrCode = '', getOrderQrCode = '', getItemQrCode = '';
@@ -47,11 +47,85 @@ class _ScanStepperState extends State<ScanStepper> {
   late bool itemIdSet = false;
   bool _loading = true;
 
+  late Types _currentType;
+  String _barcodeString = "";
 
   @override
   void initState(){
     super.initState();
+    // _currentType = Types.USER;
+    Stream<dynamic> user = scanChannel.receiveBroadcastStream();
+    user.listen(_onEvent, onError: _onError);
+    _createProfile("ThingsBoardPEApp");
   }
+
+  void _onEvent(event) {
+    print("inside onEvent 0 $_currentType");
+    setState(() {
+      // _EVENT = event;
+      // _counter++;
+      print("inside onEvent 1 $event");
+      // try {
+
+      Map barcodeScan = jsonDecode(event);
+      _barcodeString = barcodeScan['scanData'];
+      setQrCode(_barcodeString, _currentType);
+      // } catch (e) {
+      //   print('_onEvent Error: $e');
+      //   _barcodeString = "someError";
+      // }
+    });
+  }
+
+  void _onError(Object error) {
+    setState(() {
+      _barcodeString = "Error";
+    });
+  }
+
+  void startScan(Types type) {
+    setState(() {
+      _sendDataWedgeCommand(
+          "com.symbol.datawedge.api.SOFT_SCAN_TRIGGER", "START_SCANNING");
+      _currentType = type;
+      print('Type in start scan: $type');
+    });
+    print("startScan 0");
+    // _onEvent("{\"scanData\": \"bfc2fbf0-86b6-11ed-a5ef-ff73adaaed5c\"}");
+    // _onEvent({'scanData': 222});
+  }
+
+  void stopScan() {
+    setState((){
+      _sendDataWedgeCommand(
+          "com.symbol.datawedge.api.SOFT_SCAN_TRIGGER", "STOP_SCANNING");
+    });
+    //
+  }
+
+
+  Future<void> _sendDataWedgeCommand(String command, String parameter) async {
+    try {
+      String argumentAsJson =
+      jsonEncode({"command": command, "parameter": parameter});
+
+      await methodChannel.invokeMethod(
+          'sendDataWedgeCommandStringParameter', argumentAsJson);
+    } on PlatformException {
+      throw Exception('Failed to send command.');
+    }
+  }
+
+  Future<void> _createProfile(String profileName) async {
+    try {
+      await methodChannel.invokeMethod('createDataWedgeProfile', profileName);
+    } on PlatformException {
+      throw Exception('Failed to create profile.');
+    }
+  }
+
+
+
 
 
   @override
@@ -73,6 +147,13 @@ class _ScanStepperState extends State<ScanStepper> {
                       child: lastField
                           ? Row(
                         children: [
+                          Expanded(
+                            child: TextButton(
+                                onPressed: details.onStepCancel,
+                                child: const Text(
+                                  "Back",
+                                )),
+                          ),
                           if(!_loading)
                             Expanded(
                               child: ElevatedButton(
@@ -129,11 +210,13 @@ class _ScanStepperState extends State<ScanStepper> {
                 },
                 steps: <Step>[
                   Step(
-                    title: Text('User'),
+                    title: Text(''),
                     // content: _buildScanUser(),
                     content: ScanUser(
-                      userQrCode: getUserQrCode,
-                      scanQrCodeCallback: setQrCode,
+                      userQrCode: _barcodeString,
+                      // scanQrCodeCallback: setQrCode,
+                      startScan: startScan,
+                      stopScan: stopScan,
                       userValid: isUserValid,
                     ),
                     isActive: _currentStep == 0,
@@ -141,10 +224,11 @@ class _ScanStepperState extends State<ScanStepper> {
                     _currentStep > 0 ? StepState.complete : StepState.disabled,
                   ),
                   Step(
-                    title: Text('Order'),
+                    title: Text(''),
                     content: ScanOrder(
                       orderQrCode: getOrderQrCode,
-                      scanQrCodeCallback: setQrCode,
+                      startScan: startScan,
+                      stopScan: stopScan,
                       continueStep: continued,
                       commentCallback: setComment,),
                     isActive: _currentStep == 1,
@@ -152,17 +236,18 @@ class _ScanStepperState extends State<ScanStepper> {
                     _currentStep > 1 ? StepState.complete : StepState.disabled,
                   ),
                   Step(
-                    title: Text('Item'),
+                    title: Text(''),
                     content: ScanItem(
                         itemQrCode: getItemQrCode,
-                        scanQrCodeCallback: setQrCode,
+                        startScan: startScan,
+                        stopScan: stopScan,
                         itemCountCallback: setItemQuantity),
                     isActive: _currentStep == 2,
                     state:
                     _currentStep >= 2 ? StepState.complete : StepState.disabled,
                   ),
                   Step(
-                    title: Text('Finish'),
+                    title: Text('Send'),
                     content:
                     _loading ?
                     SizedBox(
@@ -304,6 +389,8 @@ class _ScanStepperState extends State<ScanStepper> {
           "userId": userId,
           "itemCount": itemCount
         };
+
+        print('request body: $body');
         takeItemRequest(body);
         lastField = true;
       } else {
@@ -327,15 +414,19 @@ class _ScanStepperState extends State<ScanStepper> {
       });
     });
 
-    var response = await widget.tbClient.post('/api/wedel/take',
-      data: body,
-    );
+    try{
+      var response = await widget.tbClient.post('/api/wedel/take',
+        data: body,
+      );
 
-    if(response.statusCode == 200){
-      setRequestStatus(true);
-    }else{
-      setRequestStatus(false);
+      if(response.statusCode == 200){
+        setRequestStatus(true);
+      }else{
+        // print(response.statusMessage.me);
+        setRequestStatus(false);
+      }
+    } catch(e){
+      print(e);
     }
-
   }
 }
