@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 
 class ScanFinished extends StatefulWidget {
   final bool status;
+  final String itemName;
+  final int itemCount;
 
-  const ScanFinished({required this.status});
+  const ScanFinished({required this.status, required this.itemName,
+    required this.itemCount});
 
   @override
   State<ScanFinished> createState() => _ScanFinishedState();
@@ -43,10 +46,11 @@ class _ScanFinishedState extends State<ScanFinished>{
                         margin: const EdgeInsets.only(bottom: 10.0),
                         child: Center(
                           child: Text(
-                            "Request sent",
+                            "Dodano część o numerze ${widget.itemName} \n(${widget.itemCount} szt.).",
+                            textAlign: TextAlign.center,
                             style: TextStyle(
                                 color: Color(0xFF424242),
-                                fontSize: 24,
+                                fontSize: 22,
                                 fontWeight: FontWeight.normal,
                                 height: 1.33),
                           ),
@@ -75,7 +79,7 @@ class _ScanFinishedState extends State<ScanFinished>{
                         margin: const EdgeInsets.only(bottom: 10.0),
                         child: Center(
                           child: Text(
-                            "Request declined. \nWrong data was sent",
+                            "Pobranie części odrzucone. \nBłędny numer ID części.",
                             textAlign: TextAlign.center,
                             style: TextStyle(
                                 color: Color(0xFF424242),

@@ -41,25 +41,25 @@ class _PrivacyPolicyState extends TbPageState<PrivacyPolicy> {
                   padding: EdgeInsets.all(16),
                   child: SingleChildScrollView(
                       child: FutureBuilder<String?>(
-                    future: privacyPolicyFuture,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.done) {
-                        var privacyPolicy = jsonDecode(snapshot.data ?? '');
-                        dom.Document document =
+                        future: privacyPolicyFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.done) {
+                            var privacyPolicy = jsonDecode(snapshot.data ?? '');
+                            dom.Document document =
                             htmlparser.parse(privacyPolicy ?? '');
-                        return Html.fromDom(
-                          document: document,
-                          tagsList: [],
-                        );
-                      } else {
-                        return Center(
-                            child: TbProgressIndicator(
-                          tbContext,
-                          size: 50.0,
-                        ));
-                      }
-                    },
-                  )))),
+                            return Html.fromDom(
+                              document: document,
+                              tagsList: [],
+                            );
+                          } else {
+                            return Center(
+                                child: TbProgressIndicator(
+                                  tbContext,
+                                  size: 50.0,
+                                ));
+                          }
+                        },
+                      )))),
           Padding(
               padding: EdgeInsets.symmetric(horizontal: 36),
               child: Row(

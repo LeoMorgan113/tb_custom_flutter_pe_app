@@ -40,7 +40,7 @@ class TbMainNavigationItem {
       List<TbMainNavigationItem> items = [
         TbMainNavigationItem(
             page: HomePage(tbContext),
-            title: 'QR-code',
+            title: 'Skanuj',
             icon: Icon(Icons.qr_code_2),
             path: '/home')
       ];
@@ -59,7 +59,7 @@ class TbMainNavigationItem {
       }
       items.add(TbMainNavigationItem(
           page: MorePage(tbContext),
-          title: 'Profile',
+          title: 'Profil',
           icon: Icon(Icons.person),
           path: '/more'));
       return items;
@@ -73,10 +73,10 @@ class TbMainNavigationItem {
     for (var item in items) {
       switch (item.path) {
         case '/home':
-          item.title = '${S.of(context).home}';
+          item.title = 'Skanuj';
           break;
         case '/more':
-          item.title = '${S.of(context).more}';
+          item.title = 'Profil';
           break;
       }
     }

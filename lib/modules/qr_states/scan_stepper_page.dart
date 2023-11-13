@@ -18,7 +18,7 @@ class _ScanPageState extends TbPageState<ScanStepperPage> {
   Widget build(BuildContext context) {
 
     return Scaffold(
-        appBar: TbAppBar(tbContext, title: Text('QR Scanning')),
+        // appBar: TbAppBar(tbContext, title: Text('QR Scanning')),
         body: ScanStepper(tbClient: tbClient, tbContext: tbContext));
   }
 

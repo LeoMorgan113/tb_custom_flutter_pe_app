@@ -76,6 +76,7 @@ class _ScanStepperState extends State<ScanStepper> {
           _currentType = Types.ORDER;
           break;
         case 2:
+          setItemQuantity(1);
           _currentType = Types.ITEM;
           break;
       }
@@ -139,72 +140,88 @@ class _ScanStepperState extends State<ScanStepper> {
                 onStepCancel: _currentStep == 0 ? null : cancel,
                 controlsBuilder: (context, details) {
                   return Container(
-                      margin: EdgeInsets.only(top: 10),
+                      margin: EdgeInsets.only(top: 15),
                       child: lastField
                           ? Row(
                         children: [
                           if(!_loading)
-                            Expanded(
-                              child: TextButton(
-                                  onPressed: details.onStepCancel,
-                                  child: const Text(
-                                    "Back",
-                                  )),
-                            ),
-                          if(!_loading)
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                },
-                                child: const Text("Close"),
+                              Expanded(
+                                child: ElevatedButton(
+                                    onPressed: details.onStepCancel,
+                                    child: const Text(
+                                      "Dodaj\nkolejną\nczęść",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(fontSize: 18),
+                                    )),
                               ),
+                          if(!_loading)
+                            Container(
+                              margin: EdgeInsets.only(left: 15.0),child: ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text("Zakończ\npobieranie\nczęści",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(fontSize: 18),),
+                                ),
                             ),
                         ],
                       )
-                          : Row(
+                          : Column(
+                            children: [
+                              Row(
                         children: [
-                          if (_currentStep != 0)
-                            Expanded(
-                              child: TextButton(
-                                  onPressed: details.onStepCancel,
-                                  child: const Text(
-                                    "Back",
-                                  )),
-                            ),
-                          const SizedBox(width: 12),
-                          if (_currentStep == 0)
-                          // User scan
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: isUserValid ?
-                                details.onStepContinue
-                                    : null ,
-                                child: Text("Next"),
-                              ),
-                            )
-                          else if (_currentStep == 1)
-                          // order scan
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: orderIdSet
-                                    ? details.onStepContinue
-                                    : null,
-                                child: Text("Next"),
-                              ),
-                            )
-                          else
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: itemIdSet ?
-                                details.onStepContinue
-                                    : null,
-                                child: const Text("Send request"),
-                              ),
-                            ),
+                              if (_currentStep != 0)
+                                Expanded(
+                                  child: TextButton(
+                                      onPressed: details.onStepCancel,
+                                      child: const Text(
+                                        "Wstecz",
+                                        style: TextStyle(fontSize: 18),
+                                      )),
+                                ),
+                              const SizedBox(width: 12),
+                              if (_currentStep == 0)
+                              // User scan
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: isUserValid ?
+                                    details.onStepContinue
+                                        : null ,
+                                    child: Text("Dalej",
+                                      style: TextStyle(fontSize: 18),),
+                                  ),
+                                )
+                              else if (_currentStep == 1)
+                              // order scan
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: orderIdSet
+                                        ? details.onStepContinue
+                                        : null,
+                                    child: Text("Dalej",
+                                      style: TextStyle(fontSize: 18),),
+                                  ),
+                                )
+                              else
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: itemIdSet ?
+                                    details.onStepContinue
+                                        : null,
+                                    child: const Text("Dodaj \nczęść",
+                                      style: TextStyle(fontSize: 18),),
+                                  ),
+                                ),
+
                         ],
-                      ));
+                      ),
+                              // SizedBox(height: 15.0,),
+
+                            ],
+                          ));
                 },
+
                 steps: <Step>[
                   Step(
                     title: Text(''),
@@ -232,17 +249,35 @@ class _ScanStepperState extends State<ScanStepper> {
                   ),
                   Step(
                     title: Text(''),
-                    content: ScanItem(
-                        itemQrCode: getItemQrCode,
-                        startScan: startScan,
-                        stopScan: stopScan,
-                        itemCountCallback: setItemQuantity),
+                    content: Column(
+                      children: [
+                          Container(
+                              margin: EdgeInsets.only(bottom: 15.0),
+                              child: Center(
+                                child: Text('Zlecenie: ${getOrderQrCode!='' ? getOrderQrCode : comment}',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                      color: Color(0xff057fb0),
+                                      fontSize: 19,
+                                      fontWeight: FontWeight.normal,
+                                      height: 1.2),
+                                ),
+                              )
+                          ),
+                        ScanItem(
+                            itemQrCode: getItemQrCode,
+                            startScan: startScan,
+                            stopScan: stopScan,
+                            itemCountCallback: setItemQuantity),
+                      ],
+                    ),
                     isActive: _currentStep == 2,
                     state:
                     _currentStep >= 2 ? StepState.complete : StepState.disabled,
                   ),
                   Step(
-                    title: Text('Send'),
+                    title: Text('Ukończono',
+                      style: TextStyle(fontSize: 18),),
                     content:
                     _loading ?
                     SizedBox(
@@ -254,13 +289,15 @@ class _ScanStepperState extends State<ScanStepper> {
                           children: [
                             TbProgressIndicator(widget.tbContext),
                             Padding(padding: EdgeInsets.only(top: 15)),
-                            Text('Processing...',
+                            Text('Przetwarzanie...',
                               style: TextStyle(
-                                  fontSize: 18
+                                  fontSize: 22
                               ),)
                           ]),
                     )
-                        : ScanFinished(status: requestSuccess),
+                        : ScanFinished(status: requestSuccess,
+                        itemName: getItemQrCode,
+                        itemCount: itemCount),
                     isActive: _currentStep == 3,
                     state:
                     _currentStep >= 3 ? StepState.complete : StepState.disabled,
@@ -301,7 +338,6 @@ class _ScanStepperState extends State<ScanStepper> {
 
 
   Future<dynamic> checkUser(String userId,{RequestConfig? requestConfig}) async{
-    // var id = 'bfc2fbf0-86b6-11ed-a5ef-ff73adaaed5c';
     var id = userId;
     try{
       var response = await widget.tbClient.get("/api/wedel/user?azureId=${id.toString()}");
@@ -313,7 +349,7 @@ class _ScanStepperState extends State<ScanStepper> {
       }
     }catch(e){
       setUserValidation(false);
-      throw Exception('Failed to check user.');
+      throw Exception('Błąd przy identyfikacji użytkownika.');
     }
   }
 
@@ -361,13 +397,13 @@ class _ScanStepperState extends State<ScanStepper> {
       if (_currentStep == 3) {
         body = {
           "itemType": getItemQrCode,
-          // "itemType": "6cd0d1a0-8c20-11ed-a932-f5796fe3fac8",
           "orderId": getOrderQrCode.isNotEmpty ? getOrderQrCode : comment,
           "userId": userId,
           "itemCount": itemCount
         };
-
-        print('request body: $body');
+        setState(() {
+          _loading = true;
+        });
         takeItemRequest(body);
         lastField = true;
       } else {
@@ -381,6 +417,12 @@ class _ScanStepperState extends State<ScanStepper> {
         ? setState(() {
       lastField = false;
       _currentStep -= 1;
+      if(_currentStep == 2){
+        getItemQrCode = '';
+        setItemQuantity(1);
+        setItemId(false);
+        setRequestStatus(false);
+      }
     }) : null;
   }
 
@@ -395,11 +437,9 @@ class _ScanStepperState extends State<ScanStepper> {
       var response = await widget.tbClient.post('/api/wedel/take',
         data: body,
       );
-
       if(response.statusCode == 200){
         setRequestStatus(true);
       }else{
-        // print(response.statusMessage.me);
         setRequestStatus(false);
       }
     } catch(e){

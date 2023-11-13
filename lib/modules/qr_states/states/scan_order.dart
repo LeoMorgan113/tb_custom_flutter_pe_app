@@ -59,7 +59,7 @@ class _ScanOrderState extends State<ScanOrder> {
                   margin: const EdgeInsets.only(bottom: 15.0),
                   child: Center(
                     child: Text(
-                      "Order's QR code",
+                      "Kod kreskowy zlecenia",
                       style: TextStyle(
                           color: Color(0xFF424242),
                           fontSize: 20,
@@ -84,7 +84,7 @@ class _ScanOrderState extends State<ScanOrder> {
                     child: ElevatedButton.icon(
                       onPressed: () => {},
                       label: Text(
-                        'Scan',
+                        'Skanuj',
                         style: TextStyle(fontSize: 20),
                       ),
                       icon: Icon(Icons.qr_code_2, size: 28),
@@ -96,10 +96,10 @@ class _ScanOrderState extends State<ScanOrder> {
                   margin: const EdgeInsets.only(top: 5.0),
                   child: Center(
                     child: Text(
-                      "Tap to scan",
+                      "Dotknij lub naciśnij przycisk",
                       style: TextStyle(
                           color: Color(0xFF737373),
-                          fontSize: 18,
+                          fontSize: 19,
                           fontWeight: FontWeight.normal,
                           height: 1.2),
                     ),
@@ -109,11 +109,11 @@ class _ScanOrderState extends State<ScanOrder> {
                     margin: const EdgeInsets.only(top: 10.0),
                     child: Center(
                       child: Text(
-                        "Scanned code: \n${widget.orderQrCode}",
+                        "Zeskanowany kod: \n${widget.orderQrCode}",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                             color: Color(0xFF03b6fc),
-                            fontSize: 20,
+                            fontSize: 18,
                             fontWeight: FontWeight.normal,
                             height: 1.33),
                       ),
@@ -133,7 +133,7 @@ class _ScanOrderState extends State<ScanOrder> {
                             builder: (BuildContext context) {
                               return AlertDialog(
                                 scrollable: true,
-                                title: Text('Comment'),
+                                title: Text('Podaj kod lub komentarz'),
                                 content: Padding(
                                   padding: const EdgeInsets.all(8.0),
                                   child: Form(
@@ -144,7 +144,7 @@ class _ScanOrderState extends State<ScanOrder> {
                                           controller: myController,
                                           validator: (value){
                                             if(value == null || value.isEmpty){
-                                              return 'Please enter comment';
+                                              return 'PProszę dodać komentarz';
                                             }
                                             widget.commentCallback(value);
                                             return null;
@@ -152,7 +152,7 @@ class _ScanOrderState extends State<ScanOrder> {
                                           decoration: InputDecoration(
                                             border: UnderlineInputBorder(),
                                             hintText:
-                                            'Please, write the reason of skipping this step',
+                                            'Proszę wpisać numer MPK/ WEN/ inny lub podać powód braku numer zlecenia.',
                                             contentPadding:
                                             EdgeInsets.symmetric(
                                                 vertical: 10),
@@ -166,7 +166,8 @@ class _ScanOrderState extends State<ScanOrder> {
                                 ),
                                 actions: [
                                   ElevatedButton(
-                                      child: Text("Continue"),
+                                      child: Text("Dodaj komentarz",
+                                        style: TextStyle(fontSize: 16)),
                                       onPressed: (){
                                         if(_formKey.currentState!.validate()){
                                           Navigator.pop(context);
@@ -177,7 +178,7 @@ class _ScanOrderState extends State<ScanOrder> {
                               );
                             });
                       },
-                      child: Text('Skip step'),
+                      child: Text('Wpisz kod lub komentarz'),
                     ),
                   )),
             ]),

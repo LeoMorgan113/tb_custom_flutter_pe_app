@@ -11,9 +11,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  thingsboard_pe_client: 1.0.5
+  thingsboard_pe_client: 1.0.7
   intl: ^0.17.0
-  flutter_secure_storage: ^8.0.0
+  flutter_secure_storage: ^6.0.0
   flutter_speed_dial: ^6.0.0
   cupertino_icons: ^1.0.2
   fluro: ^2.0.3
@@ -34,9 +34,9 @@ dependencies:
   mime: ^1.0.0
   logger: ^1.0.0
   qr_code_scanner: ^1.0.0
-  device_info_plus: ^8.1.0
+  device_info_plus: ^4.1.2
   geolocator: ^9.0.1
-  material_design_icons_flutter: ^6.0.7096
+  material_design_icons_flutter: ^5.0.5955-rc.1
   package_info: ^2.0.2
   dart_jsonwebtoken: ^2.2.0
   crypto: ^3.0.1
@@ -53,14 +53,13 @@ dependencies:
   enhance_stepper: ^0.1.1
   http: ^0.13.5
   quantity_input: ^1.0.2
-  input_quantity: ^1.1.4
   flutter_datawedge: ^1.2.0
 #  qrscanner: any
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_launcher_icons: ^0.12.0
+  flutter_launcher_icons: ^0.10.0
 
 flutter:
   uses-material-design: true
@@ -100,3 +99,6 @@ flutter_icons:
   image_path: "assets/images/thingsboard.png"
 flutter_intl:
   enabled: true
+
+dependency_overrides:
+  intl: ^0.17.0-nullsafety.2

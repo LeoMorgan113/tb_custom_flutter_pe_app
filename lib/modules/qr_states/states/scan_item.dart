@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../scan_stepper.dart';
 import 'package:quantity_input/quantity_input.dart';
 
 class ScanItem extends StatefulWidget {
@@ -38,7 +37,7 @@ class _ScanItemState extends State<ScanItem> {
                   margin: const EdgeInsets.only(bottom:15.0),
                   child: Center(
                     child: Text(
-                      "Item's QR code",
+                      "Kod QR części",
                       style: TextStyle(
                           color: Color(0xFF424242),
                           fontSize: 20,
@@ -56,18 +55,19 @@ class _ScanItemState extends State<ScanItem> {
                   child: GestureDetector(
                     onTapDown: (_) {
                       widget.startScan();
+                      setState(() {
+                        simpleIntInput = 1;
+                      });
                     },
                     onTapUp: (_) async {
                       widget.stopScan();
+
+
                     },
                     child: ElevatedButton.icon(
-                      // padding: EdgeInsets.zero,
-                      // style: ButtonStyle(
-                      //     backgroundColor:
-                      //     MaterialStateProperty.all(Colors.amber)),
                       onPressed: () => {},
                       label: Text(
-                        'Scan',
+                        'Skanuj',
                         style: TextStyle(fontSize: 20),
                       ),
                       icon: Icon(Icons.qr_code_2, size: 28),
@@ -80,23 +80,24 @@ class _ScanItemState extends State<ScanItem> {
                   margin: const EdgeInsets.only(top: 5.0),
                   child: Center(
                     child: Text(
-                      "Tap to scan",
+                      "Dotknij lub naciśnij przycisk",
                       style: TextStyle(
                           color: Color(0xFF737373),
-                          fontSize: 18,
+                          fontSize: 19,
                           fontWeight: FontWeight.normal,
                           height: 1.2),
                     ),
                   )),
               if(widget.itemQrCode != '-1' && widget.itemQrCode != '')
                 Container(
-                    margin: const EdgeInsets.only(top: 10.0),
+                    margin: const EdgeInsets.only(top: 10.0, bottom: 10.0),
                     child: Center(
                       child: Text(
-                        "Scanned code: \n${widget.itemQrCode}",
+                        "Zeskanowany kod: \n${widget.itemQrCode}",
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                             color: Color(0xFF03b6fc),
-                            fontSize: 20,
+                            fontSize: 18,
                             fontWeight: FontWeight.normal,
                             height: 1.33),
                       ),

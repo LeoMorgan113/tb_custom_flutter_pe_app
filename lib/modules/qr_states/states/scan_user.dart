@@ -36,7 +36,7 @@ class _ScanUserState extends State<ScanUser> {
                   margin: const EdgeInsets.only(bottom: 10.0),
                   child: Center(
                     child: Text(
-                      "User's QR code",
+                      "Kod QR użytkownika",
                       style: TextStyle(
                           color: Color(0xFF424242),
                           fontSize: 20,
@@ -65,7 +65,7 @@ class _ScanUserState extends State<ScanUser> {
                       //         MaterialStateProperty.all(Colors.amber)),
                       onPressed: () => {},
                       label: Text(
-                        'Scan',
+                        'Skanuj',
                         style: TextStyle(fontSize: 20),
                       ),
                       icon: Icon(Icons.qr_code_2, size: 28),
@@ -77,10 +77,10 @@ class _ScanUserState extends State<ScanUser> {
                   margin: const EdgeInsets.only(top: 5.0),
                   child: Center(
                     child: Text(
-                      "Tap to scan",
+                      "Dotknij lub naciśnij przycisk",
                       style: TextStyle(
                           color: Color(0xFF737373),
-                          fontSize: 18,
+                          fontSize: 19,
                           fontWeight: FontWeight.normal,
                           height: 1.2),
                     ),
@@ -90,11 +90,11 @@ class _ScanUserState extends State<ScanUser> {
                     margin: const EdgeInsets.only(top: 10.0),
                     child: Center(
                       child: Text(
-                        "Scanned code: \n${widget.userQrCode}",
+                        "Zeskanowany kod: \n${widget.userQrCode}",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                             color: Color(0xFF03b6fc),
-                            fontSize: 20,
+                            fontSize: 19,
                             fontWeight: FontWeight.normal,
                             height: 1.33),
                       ),
@@ -104,13 +104,13 @@ class _ScanUserState extends State<ScanUser> {
                     margin: const EdgeInsets.only(top: 10.0),
                     child: Center(
                       child: Text(
-                        "User's QR is not valid.\nPlease try again.",
+                        "Kod QR użytkownika jest niepoprawny. \nProszę spróbować ponownie.",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                             color: Color(0xFFD21616),
-                            fontSize: 20,
+                            fontSize: 18,
                             fontWeight: FontWeight.normal,
-                            height: 1.33),
+                            height: 1.2),
                       ),
                     ))
             ]),
