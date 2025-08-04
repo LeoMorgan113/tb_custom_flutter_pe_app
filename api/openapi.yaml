@@ -1,0 +1,161 @@
+openapi: 3.1.0
+info:
+  title: APIFiddle Sample Definition
+  version: 0.0.0
+  description: Example workspace
+paths:
+  /api/custom/device/simple:
+    get:
+      tags:
+      - device management
+      summary: Get device configuration from Admin
+      security:
+      - X-Authorization: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                title: GetDeviceConfigurationFromAdminOk
+                required:
+                - type
+                - availableDeviceTypes
+                - serialNumber
+                - name
+                - transcoder
+                - reseller
+                - customer
+                - availableTranscodersResellersAndCustomers
+                - isActive
+                properties:
+                  name:
+                    type: string
+                  type:
+                    type: string
+                  customer:
+                    type: object
+                    required:
+                    - id
+                    - label
+                    properties:
+                      id:
+                        type: string
+                      label:
+                        type: string
+                  isActive:
+                    type: boolean
+                  reseller:
+                    type: object
+                    required:
+                    - id
+                    - label
+                    properties:
+                      id:
+                        type: string
+                      label:
+                        type: string
+                  transcoder:
+                    type: object
+                    required:
+                    - id
+                    - label
+                    properties:
+                      id:
+                        type: string
+                      label:
+                        type: string
+                  serialNumber:
+                    type: string
+                  availableDeviceTypes:
+                    type: array
+                    items:
+                      type: string
+                  availableTranscodersResellersAndCustomers:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                      - transcoder
+                      - resellers
+                      - customers
+                      properties:
+                        customers:
+                          type: object
+                          required:
+                          - id
+                          - label
+                          properties:
+                            id:
+                              type: string
+                            label:
+                              type: string
+                        resellers:
+                          type: object
+                          required:
+                          - id
+                          - label
+                          properties:
+                            id:
+                              type: string
+                            label:
+                              type: string
+                        transcoder:
+                          type: object
+                          required:
+                          - id
+                          - label
+                          properties:
+                            id:
+                              type: string
+                            label:
+                              type: string
+                description: |
+                  {
+                    “onCreate”: boolean // on create true, on update null or false
+                    "type": "TT3647", "TT8050", "TT8052",
+                    "serialNumber": "string", // comma separated serials
+                    "name": "string", // comma separated names
+                    "reseller": {
+                      “id”: "string",
+                      “label”: “string”
+                    }
+                    "customer”: {
+                      “id”: "string",
+                      “label”: “string”
+                    },
+                    "transcoder": {
+                      “id”: "string",
+                      “label”: “string”
+                    },
+                    "isActive": boolean
+                  }
+          description: The request was successful, and the server has returned the requested resource in the response body.
+        '400':
+          content:
+            text/plain:
+              schema:
+                type: object
+          description: The server could not understand the request due to invalid syntax. The client should modify the request and try again.
+      parameters:
+      - in: query
+        name: deviceId
+        style: form
+        schema:
+          type: string
+        explode: true
+        required: false
+        description: ''
+        allowReserved: false
+      description: /api/custom/device/simple?deviceId={deviceId}
+      operationId: getDeviceConfigurationFromAdmin
+components:
+  parameters: {}
+  securitySchemes:
+    X-Authorization:
+      in: header
+      name: X-Authorization
+      type: apiKey
+      description: 'Jwt Auth: Authenticated requests contain a valid Json Web Token (JWT) as part of the `Authorization: Bearer <JWT>` header.'
+tags:
+- name: device management
