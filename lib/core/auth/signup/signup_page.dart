@@ -80,18 +80,14 @@ class _SignUpPageState extends TbPageState<SignUpPage> {
                                   crossAxisAlignment:
                                       CrossAxisAlignment.stretch,
                                   children: [
-                                    Row(
-                                      children: [
-                                        SizedBox(
-                                          height: 40,
-                                          child: tbContext.wlService
-                                                      .loginLogoImage !=
-                                                  null
-                                              ? tbContext
-                                                  .wlService.loginLogoImage!
-                                              : const SizedBox(height: 25),
-                                        ),
-                                      ],
+                                    SizedBox(
+                                      height: 40,
+                                      child: tbContext.wlService
+                                                  .loginLogoImage !=
+                                              null
+                                          ? tbContext
+                                              .wlService.loginLogoImage!
+                                          : const SizedBox(height: 25),
                                     ),
                                     const SizedBox(height: 16),
                                     if (state.selfRegistrationParams!.title !=

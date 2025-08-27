@@ -119,7 +119,7 @@ class ThingsboardAppRouter {
 
 //TODO: &&  !link.contains('signup/emailVerified') is merge conflict, need to refactor
   Future<void> navigateByAppLink(String? link) async {
-    if (link != null && !link.contains('signup/emailVerified')) {
+    if (link != null ) {
       final uri = Uri.parse(link);
       await getIt<ILocalDatabaseService>().deleteInitialAppLink();
       log.debug('TbContext: navigate by appLink $uri');
