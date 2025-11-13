@@ -1,25 +1,38 @@
 import 'package:fluro/fluro.dart';
-import 'package:flutter/widgets.dart';
-import 'package:thingsboard_app/config/routes/router.dart';
-import 'package:thingsboard_app/core/context/tb_context.dart';
-import 'package:thingsboard_app/modules/alarm/alarms_page.dart';
-import 'package:thingsboard_app/modules/main/main_page.dart';
+import 'package:thingsboard_app/config/routes/tb_routes.dart';
+import 'package:thingsboard_app/modules/alarm/presentation/view/alarm_details_page.dart';
+import 'package:thingsboard_app/modules/alarm/presentation/view/alarms_page.dart';
+import 'package:thingsboard_app/modules/alarm/presentation/view/alarms_search_page.dart';
+
 
 class AlarmRoutes extends TbRoutes {
-  late var alarmsHandler = Handler(
-      handlerFunc: (BuildContext? context, Map<String, dynamic> params) {
-    var searchMode = params['search']?.first == 'true';
-    if (searchMode) {
-      return AlarmsPage(tbContext, searchMode: true);
-    } else {
-      return MainPage(tbContext, path: '/alarms');
-    }
-  });
+  AlarmRoutes(super.tbContext);
 
-  AlarmRoutes(TbContext tbContext) : super(tbContext);
+  late final alarmsHandler = Handler(
+    handlerFunc: (context, params) {
+      final searchMode = params['search']?.firstOrNull == 'true';
+      if (!searchMode) {
+        return AlarmsPage(
+          tbContext,
+          searchMode: params['search']?.firstOrNull == 'true',
+        );
+      } else {
+        return AlarmsSearchPage(
+          tbContext: tbContext,
+        );
+      }
+    },
+  );
+
+  late final alarmDetailsHandler = Handler(
+    handlerFunc: (context, params) {
+      return AlarmDetailsPage(tbContext, id: params['id']!.first);
+    },
+  );
 
   @override
-  void doRegisterRoutes(router) {
-    router.define("/alarms", handler: alarmsHandler);
+  void doRegisterRoutes(FluroRouter router) {
+    router.define('/alarms', handler: alarmsHandler);
+    router.define('/alarmDetails/:id', handler: alarmDetailsHandler);
   }
 }

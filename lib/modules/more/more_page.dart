@@ -1,218 +1,146 @@
 import 'package:flutter/material.dart';
-import 'package:thingsboard_app/core/context/tb_context.dart';
+import 'package:thingsboard_app/config/routes/router.dart';
+import 'package:thingsboard_app/constants/enviroment_variables.dart';
 import 'package:thingsboard_app/core/context/tb_context_widget.dart';
+import 'package:thingsboard_app/core/usecases/user_details_usecase.dart';
 import 'package:thingsboard_app/generated/l10n.dart';
-import 'package:thingsboard_pe_client/thingsboard_client.dart';
+import 'package:thingsboard_app/locator.dart';
+import 'package:thingsboard_app/modules/main/main_navigation_item.dart';
+import 'package:thingsboard_app/modules/more/more_menu_item_widget.dart';
+import 'package:thingsboard_app/modules/more/profle_widget.dart';
+import 'package:thingsboard_app/thingsboard_client.dart';
+import 'package:thingsboard_app/utils/services/device_info/i_device_info_service.dart';
+import 'package:thingsboard_app/utils/services/layouts/i_layout_service.dart';
+import 'package:thingsboard_app/utils/services/notification_service.dart';
+
 
 class MorePage extends TbContextWidget {
-  MorePage(TbContext tbContext) : super(tbContext);
+  MorePage(super.tbContext, {super.key});
 
   @override
-  _MorePageState createState() => _MorePageState();
+  State<StatefulWidget> createState() => _MorePageState();
 }
 
 class _MorePageState extends TbContextState<MorePage> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        backgroundColor: Colors.white,
+    final userDetails = getIt<UserDetailsUseCase>()(
+      UserDetailsParams(
+        firstName: tbContext.userDetails?.firstName ?? '',
+        lastName: tbContext.userDetails?.lastName ?? '',
+        email: tbContext.userDetails?.email ?? '',
+      ),
+    );
+
+    return SafeArea(
+      child: Scaffold(
         body: Container(
-          padding: EdgeInsets.fromLTRB(16, 40, 16, 20),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.account_circle,
-                      size: 48, color: Color(0xFFAFAFAF)),
-                  Spacer(),
-                  IconButton(
-                      icon: Icon(Icons.settings, color: Color(0xFFAFAFAF)),
-                      onPressed: () async {
-                        await navigateTo('/profile');
-                        setState(() {});
-                      })
-                ],
-              ),
-              SizedBox(height: 22),
-              Text(_getUserDisplayName(),
-                  style: TextStyle(
-                      color: Color(0xFF282828),
-                      fontWeight: FontWeight.w500,
-                      fontSize: 20,
-                      height: 23 / 20)),
-              SizedBox(height: 2),
-              Text(_getAuthorityName(context),
-                  style: TextStyle(
-                      color: Color(0xFFAFAFAF),
-                      fontWeight: FontWeight.normal,
-                      fontSize: 14,
-                      height: 16 / 14)),
-              SizedBox(height: 24),
-              Divider(color: Color(0xFFEDEDED)),
-              SizedBox(height: 8),
-              buildMoreMenuItems(context),
-              SizedBox(height: 8),
-              Divider(color: Color(0xFFEDEDED)),
-              SizedBox(height: 8),
-              GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                      height: 48,
-                      child: Padding(
-                          padding:
-                              EdgeInsets.symmetric(vertical: 0, horizontal: 18),
-                          child: Row(mainAxisSize: MainAxisSize.max, children: [
-                            Icon(Icons.logout, color: Color(0xFFE04B2F)),
-                            SizedBox(width: 34),
-                            Text('${S.of(context).logout}',
-                                style: TextStyle(
-                                    color: Color(0xFFE04B2F),
-                                    fontStyle: FontStyle.normal,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 14,
-                                    height: 20 / 14))
-                          ]))),
-                  onTap: () {
-                    tbClient.logout(
-                        requestConfig: RequestConfig(ignoreErrors: true));
-                  }),
-              Spacer(),
-              if (tbContext.wlService.showNameVersion == true)
-                Row(
-                  mainAxisSize: MainAxisSize.max,
-                  mainAxisAlignment: MainAxisAlignment.end,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(tbContext.wlService.platformNameAndVersion,
-                        style: TextStyle(fontSize: 12))
+                    ProfileWidget(
+                      userDetails: userDetails,
+                      user: tbContext.userDetails,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Divider(
+                        color: Colors.black.withValues(alpha: .05),
+                        thickness: 1,
+                        height: 0,
+                      ),
+                    ),
+                    Flexible(child: buildMoreMenuItems(context)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Divider(
+                        color: Colors.black.withValues(alpha: .05),
+                        thickness: 1,
+                        height: 0,
+                      ),
+                    ),
+                    MoreMenuItemWidget(
+                      TbMainNavigationItem(
+                        title: S.of(context).logout,
+                        icon: Icons.logout,
+                        page: const SizedBox.shrink(),
+                        path: '',
+                      ),
+                      color: const Color(0xffD12730),
+                      onTap: () {
+                        tbContext.logout(
+                          requestConfig: RequestConfig(ignoreErrors: true),
+                        );
+                      },
+                    ),
                   ],
-                )
+                ),
+              ),
+              if(tbContext.wlService.showNameVersion == true)
+              versionInfo(),
+              appVersionInfo(),
             ],
           ),
-        ));
+        ),
+      ),
+    );
   }
+  
 
   Widget buildMoreMenuItems(BuildContext context) {
-    List<Widget> items =
-        MoreMenuItem.getItems(tbContext, context).map((menuItem) {
-      return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          child: Container(
-              height: 48,
-              child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 0, horizontal: 18),
-                  child: Row(mainAxisSize: MainAxisSize.max, children: [
-                    Icon(menuItem.icon, color: Color(0xFF282828)),
-                    SizedBox(width: 34),
-                    Text(menuItem.title,
-                        style: TextStyle(
-                            color: Color(0xFF282828),
-                            fontStyle: FontStyle.normal,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                            height: 20 / 14))
-                  ]))),
-          onTap: () {
-            navigateTo(menuItem.path);
-          });
-    }).toList();
-    return Column(children: items);
+    final items = getIt<ILayoutService>().getMorePageItems(tbContext, context);
+    final widgets =
+        items
+            .map(
+              (e) => MoreMenuItemWidget(
+                e,
+                onTap: () {
+                  getIt<ThingsboardAppRouter>().navigateTo(e.path);
+                },
+              ),
+            )
+            .toList();
+    return SingleChildScrollView(
+      child: Column(spacing: 16 ,children: widgets),
+    );
   }
 
-  String _getUserDisplayName() {
-    var user = tbContext.userDetails;
-    var name = '';
-    if (user != null) {
-      if ((user.firstName != null && user.firstName!.isNotEmpty) ||
-          (user.lastName != null && user.lastName!.isNotEmpty)) {
-        if (user.firstName != null) {
-          name += user.firstName!;
-        }
-        if (user.lastName != null) {
-          if (name.isNotEmpty) {
-            name += ' ';
-          }
-          name += user.lastName!;
-        }
-      } else {
-        name = user.email;
-      }
-    }
-    return name;
+  @override
+  void initState() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationService(
+        tbClient,
+        widget.log,
+        tbContext,
+      ).updateNotificationsCount();
+    });
+
+    super.initState();
   }
 
-  String _getAuthorityName(BuildContext context) {
-    var user = tbContext.userDetails;
-    var name = '';
-    if (user != null) {
-      var authority = user.authority;
-      switch (authority) {
-        case Authority.SYS_ADMIN:
-          name = '${S.of(context).systemAdministrator}';
-          break;
-        case Authority.TENANT_ADMIN:
-          name = '${S.of(context).tenantAdministrator}';
-          break;
-        case Authority.CUSTOMER_USER:
-          name = '${S.of(context).customer}';
-          break;
-        default:
-          break;
-      }
-    }
-    return name;
+  Widget versionInfo() {
+    return Expanded(
+      child: Align(
+        alignment: Alignment.bottomRight,
+        child: Text(
+          tbContext.wlService.platformNameAndVersion,
+          style: const TextStyle(fontSize: 12),
+        ),
+      ),
+    );
   }
-}
 
-class MoreMenuItem {
-  final String title;
-  final IconData icon;
-  final String path;
-
-  MoreMenuItem({required this.title, required this.icon, required this.path});
-
-  static List<MoreMenuItem> getItems(
-      TbContext tbContext, BuildContext context) {
-    if (tbContext.isAuthenticated) {
-      List<MoreMenuItem> items = [];
-      switch (tbContext.tbClient.getAuthUser()!.authority) {
-        case Authority.SYS_ADMIN:
-          break;
-        case Authority.TENANT_ADMIN:
-          items.addAll([
-            MoreMenuItem(
-                title: '${S.of(context).customers}',
-                icon: Icons.supervisor_account,
-                path: '/customers'),
-            MoreMenuItem(
-                title: '${S.of(context).assets}',
-                icon: Icons.domain,
-                path: '/assets'),
-            MoreMenuItem(
-                title: '${S.of(context).auditLogs}',
-                icon: Icons.track_changes,
-                path: '/auditLogs')
-          ]);
-          break;
-        case Authority.CUSTOMER_USER:
-          items.addAll([
-            MoreMenuItem(
-                title: '${S.of(context).assets}',
-                icon: Icons.domain,
-                path: '/assets')
-          ]);
-          break;
-        case Authority.REFRESH_TOKEN:
-          break;
-        case Authority.ANONYMOUS:
-          break;
-        case Authority.PRE_VERIFICATION_TOKEN:
-          break;
-      }
-      return items;
-    } else {
-      return [];
+  Widget appVersionInfo() {
+    final ver = getIt<IDeviceInfoService>().getBuildVersion();
+    if (EnvironmentVariables.showAppVersion) {
+      // translate-me-ignore-next-line
+      return Text('version: $ver');
     }
+    return const SizedBox();
   }
 }

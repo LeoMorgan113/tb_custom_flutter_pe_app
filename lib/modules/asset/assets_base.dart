@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:thingsboard_app/config/routes/router.dart';
 import 'package:thingsboard_app/core/entity/entities_base.dart';
-import 'package:thingsboard_pe_client/thingsboard_client.dart';
+import 'package:thingsboard_app/locator.dart';
+import 'package:thingsboard_app/thingsboard_client.dart';
 
 mixin AssetsBase on EntitiesBase<Asset, PageLink> {
   @override
@@ -10,13 +12,21 @@ mixin AssetsBase on EntitiesBase<Asset, PageLink> {
   String get noItemsFoundText => 'No assets found';
 
   @override
-  Future<PageData<Asset>> fetchEntities(PageLink pageLink) {
+  Future<PageData<Asset>> fetchEntities(
+    PageLink pageLink, {
+    bool refresh = false,
+  }) {
+    if (tbClient.isTenantAdmin()) {
+      return tbClient.getAssetService().getTenantAssets(pageLink);
+    }
     return tbClient.getAssetService().getUserAssets(pageLink);
   }
 
   @override
   void onEntityTap(Asset asset) {
-    navigateTo('/asset/${asset.id!.id}');
+    if (asset.id?.id != null) {
+      getIt<ThingsboardAppRouter>().navigateTo('/asset/${asset.id!.id}');
+    }
   }
 
   @override
@@ -34,92 +44,122 @@ mixin AssetsBase on EntitiesBase<Asset, PageLink> {
     return Text(asset.name);
   }
 
-  Widget _buildCard(context, Asset asset) {
-    return Row(mainAxisSize: MainAxisSize.max, children: [
-      Flexible(
+  Widget _buildCard(BuildContext context, Asset asset) {
+    return Row(
+      children: [
+        Flexible(
           fit: FlexFit.tight,
           child: Container(
-            padding: EdgeInsets.symmetric(vertical: 10, horizontal: 0),
+            padding: const EdgeInsets.symmetric(vertical: 10),
             child: Row(
-              mainAxisSize: MainAxisSize.max,
               children: [
-                SizedBox(width: 16),
+                const SizedBox(width: 16),
                 Flexible(
-                    fit: FlexFit.tight,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                            mainAxisSize: MainAxisSize.max,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              FittedBox(
-                                  fit: BoxFit.fitWidth,
-                                  alignment: Alignment.centerLeft,
-                                  child: Text('${asset.name}',
-                                      style: TextStyle(
-                                          color: Color(0xFF282828),
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                          height: 20 / 14))),
-                              Text(
-                                  entityDateFormat.format(
-                                      DateTime.fromMillisecondsSinceEpoch(
-                                          asset.createdTime!)),
-                                  style: TextStyle(
-                                      color: Color(0xFFAFAFAF),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.normal,
-                                      height: 16 / 12))
-                            ]),
-                        SizedBox(height: 4),
-                        Text('${asset.type}',
-                            style: TextStyle(
-                                color: Color(0xFFAFAFAF),
-                                fontSize: 12,
-                                fontWeight: FontWeight.normal,
-                                height: 1.33))
-                      ],
-                    )),
-                SizedBox(width: 16),
-                Icon(Icons.chevron_right, color: Color(0xFFACACAC)),
-                SizedBox(width: 16)
+                  fit: FlexFit.tight,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.fitWidth,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                asset.name,
+                                style: const TextStyle(
+                                  color: Color(0xFF282828),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  height: 20 / 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Text(
+                            entityDateFormat.format(
+                              DateTime.fromMillisecondsSinceEpoch(
+                                asset.createdTime!,
+                              ),
+                            ),
+                            style: const TextStyle(
+                              color: Color(0xFFAFAFAF),
+                              fontSize: 12,
+                              fontWeight: FontWeight.normal,
+                              height: 16 / 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        asset.type,
+                        style: const TextStyle(
+                          color: Color(0xFFAFAFAF),
+                          fontSize: 12,
+                          fontWeight: FontWeight.normal,
+                          height: 1.33,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                const Icon(Icons.chevron_right, color: Color(0xFFACACAC)),
+                const SizedBox(width: 16),
               ],
             ),
-          ))
-    ]);
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildListWidgetCard(BuildContext context, Asset asset) {
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      Flexible(
-          fit: FlexFit.loose,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
           child: Container(
-              padding: EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
+            padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 16),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 Flexible(
-                    fit: FlexFit.loose,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        FittedBox(
-                            fit: BoxFit.fitWidth,
-                            alignment: Alignment.centerLeft,
-                            child: Text('${asset.name}',
-                                style: TextStyle(
-                                    color: Color(0xFF282828),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    height: 1.7))),
-                        Text('${asset.type}',
-                            style: TextStyle(
-                                color: Color(0xFFAFAFAF),
-                                fontSize: 12,
-                                fontWeight: FontWeight.normal,
-                                height: 1.33))
-                      ],
-                    ))
-              ])))
-    ]);
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.fitWidth,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          asset.name,
+                          style: const TextStyle(
+                            color: Color(0xFF282828),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            height: 1.7,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        asset.type,
+                        style: const TextStyle(
+                          color: Color(0xFFAFAFAF),
+                          fontSize: 12,
+                          fontWeight: FontWeight.normal,
+                          height: 1.33,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

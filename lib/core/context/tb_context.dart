@@ -1,308 +1,219 @@
 import 'dart:async';
-import 'package:universal_platform/universal_platform.dart';
-import 'package:device_info_plus/device_info_plus.dart';
+
+import 'package:app_links/app_links.dart';
 import 'package:fluro/fluro.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
-import 'package:package_info/package_info.dart';
-import 'package:thingsboard_app/constants/app_constants.dart';
-import 'package:thingsboard_app/core/auth/oauth2/app_secret_provider.dart';
-import 'package:thingsboard_app/core/auth/oauth2/tb_oauth2_client.dart';
-import 'package:thingsboard_app/modules/main/main_page.dart';
-import 'package:thingsboard_app/utils/services/widget_action_handler.dart';
-import 'package:thingsboard_app/utils/services/wl_service.dart';
-import 'package:thingsboard_pe_client/thingsboard_client.dart';
-import 'package:thingsboard_app/utils/services/tb_app_storage.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:thingsboard_app/config/routes/router.dart';
 import 'package:thingsboard_app/core/context/tb_context_widget.dart';
-import 'package:uni_links/uni_links.dart';
+import 'package:thingsboard_app/core/logger/tb_logger.dart';
+import 'package:thingsboard_app/generated/l10n.dart';
+import 'package:thingsboard_app/locator.dart';
+import 'package:thingsboard_app/modules/version/route/version_route.dart';
+import 'package:thingsboard_app/modules/version/route/version_route_arguments.dart';
+import 'package:thingsboard_app/thingsboard_client.dart';
+import 'package:thingsboard_app/utils/services/device_info/i_device_info_service.dart';
+import 'package:thingsboard_app/utils/services/endpoint/i_endpoint_service.dart';
+import 'package:thingsboard_app/utils/services/firebase/i_firebase_service.dart';
+import 'package:thingsboard_app/utils/services/layouts/i_layout_service.dart';
+import 'package:thingsboard_app/utils/services/notification_service.dart';
+import 'package:thingsboard_app/utils/services/overlay_service/i_overlay_service.dart';
+import 'package:thingsboard_app/utils/services/wl_service.dart';
+import 'package:thingsboard_app/utils/utils.dart';
+import 'package:universal_platform/universal_platform.dart';
 
-enum NotificationType { info, warn, success, error }
+part 'has_tb_context.dart';
 
-class TbLogOutput extends LogOutput {
-  @override
-  void output(OutputEvent event) {
-    for (var line in event.lines) {
-      debugPrint(line);
-    }
+class TbContext implements PopEntry {
+  TbContext() {
+    wlService = WlService(this);
   }
-}
-
-class TbLogsFilter extends LogFilter {
-  @override
-  bool shouldLog(LogEvent event) {
-    if (kReleaseMode) {
-      return event.level.index >= Level.warning.index;
-    } else {
-      return true;
-    }
-  }
-}
-
-class TbLogger {
-  final _logger = Logger(
-      filter: TbLogsFilter(),
-      printer: PrefixPrinter(PrettyPrinter(
-          methodCount: 0,
-          errorMethodCount: 8,
-          lineLength: 200,
-          colors: false,
-          printEmojis: true,
-          printTime: false)),
-      output: TbLogOutput());
-
-  void verbose(dynamic message, [dynamic error, StackTrace? stackTrace]) {
-    _logger.v(message, error, stackTrace);
-  }
-
-  void debug(dynamic message, [dynamic error, StackTrace? stackTrace]) {
-    _logger.d(message, error, stackTrace);
-  }
-
-  void info(dynamic message, [dynamic error, StackTrace? stackTrace]) {
-    _logger.i(message, error, stackTrace);
-  }
-
-  void warn(dynamic message, [dynamic error, StackTrace? stackTrace]) {
-    _logger.w(message, error, stackTrace);
-  }
-
-  void error(dynamic message, [dynamic error, StackTrace? stackTrace]) {
-    _logger.e(message, error, stackTrace);
-  }
-
-  void fatal(dynamic message, [dynamic error, StackTrace? stackTrace]) {
-    _logger.wtf(message, error, stackTrace);
-  }
-}
-
-typedef OpenDashboardCallback = void Function(String dashboardId,
-    {String? dashboardTitle, String? state, bool? hideToolbar});
-
-abstract class TbMainDashboardHolder {
-  Future<void> navigateToDashboard(String dashboardId,
-      {String? dashboardTitle,
-      String? state,
-      bool? hideToolbar,
-      bool animate = true});
-
-  Future<bool> openMain({bool animate});
-
-  Future<bool> closeMain({bool animate});
-
-  Future<bool> openDashboard({bool animate});
-
-  Future<bool> closeDashboard({bool animate});
-
-  bool isDashboardOpen();
-
-  Future<bool> dashboardGoBack();
-}
-
-class TbContext {
-  static final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
-  bool _initialized = false;
   bool isUserLoaded = false;
-  final ValueNotifier<bool> _isAuthenticated = ValueNotifier(false);
-  PlatformType? _oauth2PlatformType;
-  List<OAuth2ClientInfo>? oauth2ClientInfos;
-  SignUpSelfRegistrationParams? signUpParams;
+  final _isAuthenticated = ValueNotifier<bool>(false);
   List<TwoFaProviderInfo>? twoFactorAuthProviders;
   User? userDetails;
   AllowedPermissionsInfo? userPermissions;
   HomeDashboardInfo? homeDashboard;
+  VersionInfo? versionInfo;
+  StoreInfo? storeInfo;
+  final IOverlayService _overlayService = getIt<IOverlayService>();
+  final _deviceInfoService = getIt<IDeviceInfoService>();
   final _isLoadingNotifier = ValueNotifier<bool>(false);
   final _log = TbLogger();
-  late final _widgetActionHandler;
-  late final AndroidDeviceInfo? _androidInfo;
-  late final IosDeviceInfo? _iosInfo;
-  late final String packageName;
-  String? _initialNavigation;
+  StreamSubscription? _appLinkStreamSubscription;
+  final appLinks = AppLinks();
 
-  TbMainDashboardHolder? _mainDashboardHolder;
   bool _closeMainFirst = false;
+  late bool _handleRootState;
 
-  GlobalKey<ScaffoldMessengerState> messengerKey =
-      GlobalKey<ScaffoldMessengerState>();
-  late final TbStorage storage;
-  late final ThingsboardClient tbClient;
-  late final TbOAuth2Client oauth2Client;
+  @override
+  final canPopNotifier = ValueNotifier<bool>(false);
+
+  @override
+  void onPopInvoked(bool didPop) {
+    onPopInvokedImpl(didPop);
+  }
+
+  @override
+  void onPopInvokedWithResult(bool didPop, dynamic result) {
+    onPopInvokedImpl(didPop, result);
+  }
+
+  late ThingsboardClient tbClient;
   late final WlService wlService;
 
-  final FluroRouter router;
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
+  Listenable get isAuthenticatedListenable => _isAuthenticated;
+
+  bool get isAuthenticated => _isAuthenticated.value;
+
   TbContextState? currentState;
-
-  TbContext(this.router) {
-    _widgetActionHandler = WidgetActionHandler(this);
-    wlService = WlService(this);
-  }
-
+  late final ThingsboardAppRouter thingsboardAppRouter = getIt();
   TbLogger get log => _log;
-  WidgetActionHandler get widgetActionHandler => _widgetActionHandler;
+  final bottomNavigationTabChangedStream = StreamController<int>.broadcast();
 
   Future<void> init() async {
-    assert(() {
-      if (_initialized) {
-        throw StateError('TbContext already initialized!');
-      }
-      return true;
-    }());
-    _initialized = true;
-    storage = createAppStorage();
-    tbClient = ThingsboardClient(ThingsboardAppConstants.thingsBoardApiEndpoint,
-        storage: storage,
-        onUserLoaded: onUserLoaded,
-        onError: onError,
-        onLoadStarted: onLoadStarted,
-        onLoadFinished: onLoadFinished,
-        computeFunc: <Q, R>(callback, message) => compute(callback, message));
+    _handleRootState = true;
 
-    oauth2Client = TbOAuth2Client(
-        tbContext: this, appSecretProvider: AppSecretProvider.local());
+    final endpoint = await getIt<IEndpointService>().getEndpoint();
+    log.debug('TbContext::init() endpoint: $endpoint');
+
+    tbClient = ThingsboardClient(
+      endpoint,
+      storage: getIt(),
+      onUserLoaded: onUserLoaded,
+      onError: onError,
+      onLoadStarted: onLoadStarted,
+      onLoadFinished: onLoadFinished,
+      computeFunc: <Q, R>(callback, message) => compute(callback, message),
+    );
 
     try {
-      if (UniversalPlatform.isAndroid) {
-        _androidInfo = await deviceInfoPlugin.androidInfo;
-        _oauth2PlatformType = PlatformType.ANDROID;
-      } else if (UniversalPlatform.isIOS) {
-        _iosInfo = await deviceInfoPlugin.iosInfo;
-        _oauth2PlatformType = PlatformType.IOS;
-      } else {
-        _oauth2PlatformType = PlatformType.WEB;
-      }
-      if (UniversalPlatform.isAndroid || UniversalPlatform.isIOS) {
-        PackageInfo packageInfo = await PackageInfo.fromPlatform();
-        packageName = packageInfo.packageName;
-      } else {
-        packageName = 'web.app';
-      }
-      try {
-        final initialUri = await getInitialUri();
-        _updateInitialNavigation(initialUri);
-      } catch (e) {
-        log.error('Failed to get initial uri: $e', e);
-      }
       await tbClient.init();
-      if (UniversalPlatform.isAndroid || UniversalPlatform.isIOS) {
-        uriLinkStream.listen((Uri? uri) {
-          _updateInitialNavigation(uri);
-          handleInitialNavigation();
-        }, onError: (e) {
-          log.error('Failed to get new initial uri: $e', e);
-        });
-      }
     } catch (e, s) {
       log.error('Failed to init tbContext: $e', e, s);
+      await onFatalError(e);
     }
   }
 
-  void _updateInitialNavigation(Uri? initialUri) {
-    if (initialUri != null && initialUri.path.isNotEmpty) {
-      _initialNavigation = initialUri.path;
-      if (initialUri.hasQuery) {
-        _initialNavigation = '$_initialNavigation?${initialUri.query}';
-      }
-      log.debug('Initial navigation: $_initialNavigation');
-    }
+  Future<void> reInit({
+    required String endpoint,
+    required VoidCallback onDone,
+    required ErrorCallback onAuthError,
+  }) async {
+    log.debug('TbContext:reinit()');
+
+    _handleRootState = true;
+
+    tbClient = ThingsboardClient(
+      endpoint,
+      storage: getIt(),
+      onUserLoaded: () => onUserLoaded(onDone: onDone),
+      onError: (error) {
+        onAuthError(error);
+        onError(error);
+      },
+      onLoadStarted: onLoadStarted,
+      onLoadFinished: onLoadFinished,
+      computeFunc: <Q, R>(callback, message) => compute(callback, message),
+    );
+
+    await tbClient.init();
   }
 
-  void setMainDashboardHolder(TbMainDashboardHolder holder) {
-    _mainDashboardHolder = holder;
+  Future<void> onFatalError(dynamic e) async {
+    String getMessage(dynamic e, BuildContext context) {
+      final message =
+          e is ThingsboardError
+              ? (e.message ?? S.of(context).unknownError)
+              : S.of(context).unknownError;
+
+      return '${S.of(context).fatalApplicationErrorOccurred}\n$message';
+    }
+
+    await _overlayService.showAlertDialog(
+      content:
+          (context) => DialogContent(
+            title: S.of(context).fatalError,
+            message: getMessage(e, context),
+            ok: S.of(context).cancel,
+          ),
+    );
+    logout();
   }
 
   void onError(ThingsboardError tbError) {
     log.error('onError', tbError, tbError.getStackTrace());
-    showErrorNotification(tbError.message!);
-  }
-
-  void showErrorNotification(String message, {Duration? duration}) {
-    showNotification(message, NotificationType.error, duration: duration);
-  }
-
-  void showInfoNotification(String message, {Duration? duration}) {
-    showNotification(message, NotificationType.info, duration: duration);
-  }
-
-  void showWarnNotification(String message, {Duration? duration}) {
-    showNotification(message, NotificationType.warn, duration: duration);
-  }
-
-  void showSuccessNotification(String message, {Duration? duration}) {
-    showNotification(message, NotificationType.success, duration: duration);
-  }
-
-  void showNotification(String message, NotificationType type,
-      {Duration? duration}) {
-    duration ??= const Duration(days: 1);
-    Color backgroundColor;
-    var textColor = Color(0xFFFFFFFF);
-    switch (type) {
-      case NotificationType.info:
-        backgroundColor = Color(0xFF323232);
-        break;
-      case NotificationType.warn:
-        backgroundColor = Color(0xFFdc6d1b);
-        break;
-      case NotificationType.success:
-        backgroundColor = Color(0xFF008000);
-        break;
-      case NotificationType.error:
-        backgroundColor = Color(0xFF800000);
-        break;
-    }
-    final snackBar = SnackBar(
-      duration: duration,
-      backgroundColor: backgroundColor,
-      content: Text(
-        message,
-        style: TextStyle(color: textColor),
-      ),
-      action: SnackBarAction(
-        label: 'Close',
-        textColor: textColor,
-        onPressed: () {
-          messengerKey.currentState!
-              .hideCurrentSnackBar(reason: SnackBarClosedReason.dismiss);
-        },
-      ),
-    );
-    messengerKey.currentState!.removeCurrentSnackBar();
-    messengerKey.currentState!.showSnackBar(snackBar);
-  }
-
-  void hideNotification() {
-    messengerKey.currentState!.removeCurrentSnackBar();
+    _overlayService.showErrorNotification((_) => tbError.message!);
   }
 
   void onLoadStarted() {
-    log.debug('On load started.');
+    log.debug('TbContext: On load started.');
     _isLoadingNotifier.value = true;
   }
 
-  void onLoadFinished() {
-    log.debug('On load finished.');
+  Future<void> onLoadFinished() async {
+    log.debug('TbContext: On load finished.');
     _isLoadingNotifier.value = false;
   }
-
-  Future<void> onUserLoaded() async {
+Future<bool> checkDasboardAccess(String id) async {
     try {
-      log.debug('onUserLoaded: isAuthenticated=${tbClient.isAuthenticated()}');
+      final dashboard = await tbClient.getDashboardService().getDashboard(id);
+      if (dashboard == null) {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+    return true;
+  }
+  Future<void> onUserLoaded({VoidCallback? onDone}) async {
+    try {
+      log.debug(
+        'TbContext.onUserLoaded: isAuthenticated=${tbClient.isAuthenticated()}',
+      );
       isUserLoaded = true;
       if (tbClient.isAuthenticated() && !tbClient.isPreVerificationToken()) {
         log.debug('authUser: ${tbClient.getAuthUser()}');
         if (tbClient.getAuthUser()!.userId != null) {
           try {
-            userDetails = await tbClient.getUserService().getUser();
-            userPermissions = await tbClient
-                .getUserPermissionsService()
-                .getAllowedPermissions();
-            homeDashboard =
-                await tbClient.getDashboardService().getHomeDashboardInfo();
+            userPermissions =
+                await tbClient
+                    .getUserPermissionsService()
+                    .getAllowedPermissions();
+
+            final mobileInfo = await tbClient
+                .getMobileService()
+                .getUserMobileInfo(
+                  MobileInfoQuery(
+                    platformType: _deviceInfoService.getPlatformType(),
+                    packageName: _deviceInfoService.getApplicationId(),
+                  ),
+                );
+
+            userDetails = mobileInfo?.user;
+            homeDashboard = mobileInfo?.homeDashboardInfo;
+            versionInfo = mobileInfo?.versionInfo;
+            storeInfo = mobileInfo?.storeInfo;
+            if (_defaultDashboardId() != null) {
+              final hasAccess = await checkDasboardAccess(
+                _defaultDashboardId()!,
+              );
+              if (!hasAccess) {
+                userDetails?.additionalInfo?['defaultDashboardId'] = null;
+              }
+            }
+            getIt<ILayoutService>().cachePageLayouts(
+              mobileInfo?.pages,
+              authority: tbClient.getAuthUser()!.authority,
+            );
           } catch (e) {
-            if (!_isConnectionError(e)) {
-              tbClient.logout();
+            log.error('TbContext::onUserLoaded error $e');
+            if (!Utils.isConnectionError(e)) {
+              logout();
             } else {
               rethrow;
             }
@@ -311,62 +222,120 @@ class TbContext {
       } else {
         if (tbClient.isPreVerificationToken()) {
           log.debug('authUser: ${tbClient.getAuthUser()}');
-          twoFactorAuthProviders = await tbClient
-              .getTwoFactorAuthService()
-              .getAvailableLoginTwoFaProviders();
+          twoFactorAuthProviders =
+              await tbClient
+                  .getTwoFactorAuthService()
+                  .getAvailableLoginTwoFaProviders();
         } else {
           twoFactorAuthProviders = null;
         }
+
         userDetails = null;
         userPermissions = null;
         homeDashboard = null;
-        oauth2ClientInfos = await tbClient.getOAuth2Service().getOAuth2Clients(
-            pkgName: packageName, platform: _oauth2PlatformType);
-        signUpParams = await tbClient
-            .getSelfRegistrationService()
-            .getSignUpSelfRegistrationParams(pkgName: packageName);
+        versionInfo = null;
+        storeInfo = null;
       }
+
       _isAuthenticated.value =
           tbClient.isAuthenticated() && !tbClient.isPreVerificationToken();
       await wlService.updateWhiteLabeling();
-      await updateRouteState();
-    } catch (e, s) {
-      log.error('Error: $e', e, s);
-      if (_isConnectionError(e)) {
-        var res = await confirm(
-            title: 'Connection error',
-            message: 'Failed to connect to server',
-            cancel: 'Cancel',
-            ok: 'Retry');
-        if (res == true) {
-          onUserLoaded();
-        } else {
-          navigateTo('/login',
-              replace: true,
-              clearStack: true,
-              transition: TransitionType.fadeIn,
-              transitionDuration: Duration(milliseconds: 750));
+      if (versionInfo != null && versionInfo?.minVersion != null) {
+        if (_deviceInfoService.getAppVersion().versionInt() <
+            (versionInfo!.minVersion?.versionInt() ?? 0)) {
+          thingsboardAppRouter.navigateTo(
+            VersionRoutes.updateRequiredRoutePath,
+            clearStack: true,
+            replace: true,
+            routeSettings: RouteSettings(
+              arguments: VersionRouteArguments(
+                versionInfo: versionInfo!,
+                storeInfo: storeInfo,
+              ),
+            ),
+          );
+          return;
         }
       }
+
+      if (isAuthenticated) {
+        onDone?.call();
+      }
+  FlutterNativeSplash.remove();
+      if (_handleRootState) {
+        await updateRouteState();
+      }
+
+      if (isAuthenticated) {
+        if (getIt<IFirebaseService>().apps.isNotEmpty) {
+          await NotificationService(tbClient, log, this).init();
+        }
+      }
+    } catch (e, s) {
+      log.error('TbContext.onUserLoaded: $e', e, s);
+
+      if (Utils.isConnectionError(e)) {
+        final res = await _overlayService.showAlertDialog(
+          content:
+              (context) => DialogContent(
+                title: S.of(context).connectionError,
+                message: S.of(context).failedToConnectToServer,
+                ok: S.of(context).retry,
+              ),
+        );
+        if (res == true) {
+          _overlayService.hideNotification();
+          onUserLoaded();
+        } else {
+          thingsboardAppRouter.navigateTo(
+            '/login',
+            replace: true,
+            clearStack: true,
+            transition: TransitionType.fadeIn,
+            transitionDuration: const Duration(milliseconds: 750),
+          );
+        }
+      } else {
+        thingsboardAppRouter.navigateTo(
+          '/login',
+          replace: true,
+          clearStack: true,
+          transition: TransitionType.fadeIn,
+          transitionDuration: const Duration(milliseconds: 750),
+        );
+      }
+    } finally {
+      _appLinkStreamSubscription ??= appLinks.uriLinkStream.listen(
+        (link) {
+        
+          thingsboardAppRouter.navigateByAppLink(link.toString());
+        },
+        onError: (err) {
+          log.error('linkStream.listen $err');
+        },
+      );
+        FlutterNativeSplash.remove();
     }
   }
 
-  bool _isConnectionError(e) {
-    return e is ThingsboardError &&
-        e.errorCode == ThingsBoardErrorCode.general &&
-        e.message == 'Unable to connect';
+  Future<void> logout({
+    RequestConfig? requestConfig,
+    bool notifyUser = true,
+  }) async {
+    log.debug('TbContext::logout($requestConfig, $notifyUser)');
+    _handleRootState = true;
+
+    if (getIt<IFirebaseService>().apps.isNotEmpty) {
+      await NotificationService(tbClient, log, this).logout();
+    }
+
+    await tbClient.logout(requestConfig: requestConfig, notifyUser: notifyUser);
+
+    _appLinkStreamSubscription?.cancel();
+    _appLinkStreamSubscription = null;
   }
 
-  Listenable get isAuthenticatedListenable => _isAuthenticated;
-
-  bool get isAuthenticated => _isAuthenticated.value;
-
-  bool get hasOAuthClients =>
-      oauth2ClientInfos != null && oauth2ClientInfos!.isNotEmpty;
-
-  bool get hasSelfRegistration =>
-      signUpParams != null && signUpParams!.captchaSiteKey != null;
-
+  ///TODO: Mergeconflict here
   bool hasGenericPermission(Resource resource, Operation operation) {
     if (userPermissions != null) {
       return userPermissions!.hasGenericPermission(resource, operation);
@@ -374,62 +343,58 @@ class TbContext {
       return false;
     }
   }
-
-  bool handleInitialNavigation() {
-    if (_initialNavigation != null &&
-        _initialNavigation!.startsWith('/signup/emailVerified')) {
-      if (tbClient.isAuthenticated()) {
-        tbClient.logout();
-      } else {
-        navigateTo(_initialNavigation!,
-            replace: true,
-            clearStack: true,
-            transition: TransitionType.fadeIn,
-            transitionDuration: Duration(milliseconds: 750));
-        _initialNavigation = null;
-      }
-      return true;
-    }
-    return false;
-  }
-
   Future<void> updateRouteState() async {
-    if (currentState != null) {
-      if (!handleInitialNavigation()) {
-        if (tbClient.isAuthenticated() && !tbClient.isPreVerificationToken()) {
-          var defaultDashboardId = _defaultDashboardId();
-          if (defaultDashboardId != null) {
-            bool fullscreen = _userForceFullscreen();
-            if (!fullscreen) {
-              await navigateToDashboard(defaultDashboardId, animate: false);
-              navigateTo('/home',
-                  replace: true,
-                  closeDashboard: false,
-                  transition: TransitionType.none);
-            } else {
-              navigateTo('/fullscreenDashboard/$defaultDashboardId',
-                  replace: true, transition: TransitionType.fadeIn);
-            }
-          } else {
-            navigateTo('/home',
-                replace: true,
-                transition: TransitionType.fadeIn,
-                transitionDuration: Duration(milliseconds: 750));
-          }
-        } else {
-          navigateTo('/login',
-              replace: true,
-              clearStack: true,
-              transition: TransitionType.fadeIn,
-              transitionDuration: Duration(milliseconds: 750));
-        }
-      }
+    log.debug(
+      'TbContext:updateRouteState() ${currentState != null && currentState!.mounted}',
+    );
+    if (!tbClient.isAuthenticated() || tbClient.isPreVerificationToken()) {
+      thingsboardAppRouter.navigateTo(
+        '/login',
+        replace: true,
+        clearStack: true,
+        transition: TransitionType.fadeIn,
+        transitionDuration: const Duration(milliseconds: 750),
+      );
+      return;
     }
+
+    final defaultDashboardId = _defaultDashboardId();
+    if (defaultDashboardId == null) {
+      thingsboardAppRouter.navigateTo(
+        '/main',
+        replace: true,
+        clearStack: true,
+        transition: TransitionType.fadeIn,
+        transitionDuration: const Duration(milliseconds: 750),
+      );
+      return;
+    }
+    final bool fullscreen = _userForceFullscreen();
+    if (fullscreen) {
+      thingsboardAppRouter.navigateTo(
+        '/fullscreenDashboard/$defaultDashboardId',
+        replace: true,
+        clearStack: true,
+        transition: TransitionType.fadeIn,
+      );
+      return;
+    }
+    await thingsboardAppRouter.navigateToDashboard(
+      defaultDashboardId,
+      animate: false,
+    );
+    thingsboardAppRouter.navigateTo(
+      '/main',
+      replace: true,
+      closeDashboard: false,
+      clearStack: true,
+      transition: TransitionType.none,
+    );
   }
 
   String? _defaultDashboardId() {
     if (userDetails != null && userDetails!.additionalInfo != null) {
-      return userDetails!.additionalInfo!['defaultDashboardId'];
+      return userDetails!.additionalInfo!['defaultDashboardId']?.toString();
     }
     return null;
   }
@@ -441,254 +406,54 @@ class TbContext {
             userDetails!.additionalInfo!['defaultDashboardFullscreen'] == true);
   }
 
-  bool isPhysicalDevice() {
-    if (UniversalPlatform.isAndroid) {
-      return _androidInfo!.isPhysicalDevice == true;
-    } else if (UniversalPlatform.isIOS) {
-      return _iosInfo!.isPhysicalDevice;
-    } else {
-      return false;
-    }
-  }
-
   String userAgent() {
     String userAgent = 'Mozilla/5.0';
     if (UniversalPlatform.isAndroid) {
       userAgent +=
-          ' (Linux; Android ${_androidInfo!.version.release}; ${_androidInfo!.model})';
+          ' (Linux; Android ${_deviceInfoService.getSystemVersion()}; ${_deviceInfoService.getDeviceModel()})';
     } else if (UniversalPlatform.isIOS) {
-      userAgent += ' (${_iosInfo!.model})';
+      userAgent += ' (${_deviceInfoService.getDeviceModel()})';
     }
-    userAgent +=
-        ' AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/83.0.4103.106 Mobile Safari/537.36';
-    return userAgent;
+    return '$userAgent AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/83.0.4103.106 Mobile Safari/537.36';
   }
 
   bool isHomePage() {
     if (currentState != null) {
       if (currentState is TbMainState) {
-        var mainState = currentState as TbMainState;
+        final mainState = currentState! as TbMainState;
         return mainState.isHomePage();
       }
     }
     return false;
   }
 
-  Future<dynamic> navigateTo(String path,
-      {bool replace = false,
-      bool clearStack = false,
-      closeDashboard = true,
-      TransitionType? transition,
-      Duration? transitionDuration,
-      bool restoreDashboard = true}) async {
-    if (currentState != null) {
-      hideNotification();
-      bool isOpenedDashboard =
-          _mainDashboardHolder?.isDashboardOpen() == true && closeDashboard;
-      if (isOpenedDashboard) {
-        _mainDashboardHolder?.openMain();
-      }
-      if (currentState is TbMainState) {
-        var mainState = currentState as TbMainState;
-        if (mainState.canNavigate(path) && !replace) {
-          mainState.navigateToPath(path);
-          return;
-        }
-      }
-      if (TbMainNavigationItem.isMainPageState(this, path)) {
-        replace = true;
-        clearStack = true;
-      }
-      if (transition != TransitionType.nativeModal && isOpenedDashboard) {
-        transition = TransitionType.none;
-      } else if (transition == null) {
-        if (replace) {
-          transition = TransitionType.fadeIn;
-        } else {
-          transition = TransitionType.native;
-        }
-      }
-      _closeMainFirst = isOpenedDashboard;
-      return await router.navigateTo(currentState!.context, path,
-          transition: transition,
-          transitionDuration: transitionDuration,
-          replace: replace,
-          clearStack: clearStack);
-    }
-  }
-
-  Future<void> navigateToDashboard(String dashboardId,
-      {String? dashboardTitle,
-      String? state,
-      bool? hideToolbar,
-      bool animate = true}) async {
-    await _mainDashboardHolder?.navigateToDashboard(dashboardId,
-        dashboardTitle: dashboardTitle,
-        state: state,
-        hideToolbar: hideToolbar,
-        animate: animate);
-  }
-
-  Future<T?> showFullScreenDialog<T>(Widget dialog) {
-    return Navigator.of(currentState!.context).push<T>(new MaterialPageRoute<T>(
+  Future<T?> showFullScreenDialog<T>(Widget dialog, {BuildContext? context}) {
+    return Navigator.of(context ?? currentState!.context).push<T>(
+      MaterialPageRoute<T>(
         builder: (BuildContext context) {
           return dialog;
         },
-        fullscreenDialog: true));
+        fullscreenDialog: true,
+      ),
+    );
   }
 
-  void pop<T>([T? result, BuildContext? context]) async {
-    await closeMainIfNeeded();
-    var targetContext = context ?? currentState?.context;
-    if (targetContext != null) {
-      router.pop<T>(targetContext, result);
+  Future<void> onPopInvokedImpl<T>(bool didPop, [T? result]) async {
+    if (didPop) {
+      return;
     }
-  }
 
-  Future<bool> maybePop<T extends Object?>([T? result]) async {
-    if (currentState != null) {
-      return Navigator.of(currentState!.context).maybePop(result);
-    } else {
-      return true;
-    }
-  }
-
-  Future<bool> willPop() async {
-    if (await closeMainIfNeeded()) {
-      return true;
-    }
-    if (_mainDashboardHolder != null) {
-      return await _mainDashboardHolder!.dashboardGoBack();
-    }
-    return true;
-  }
-
-  Future<bool> closeMainIfNeeded() async {
-    if (currentState != null) {
-      if (currentState!.closeMainFirst && _mainDashboardHolder != null) {
-        await _mainDashboardHolder!.closeMain();
-        return true;
+    if (await currentState?.willPop() == true) {
+      if (currentState?.context != null &&
+          currentState?.context.mounted == true) {
+        // ignore: use_build_context_synchronously
+        final navigator = Navigator.of(currentState!.context);
+        if (navigator.canPop()) {
+          navigator.pop(result);
+        } else {
+          SystemNavigator.pop();
+        }
       }
     }
-    return false;
-  }
-
-  Future<bool?> confirm(
-      {required String title,
-      required String message,
-      String cancel = 'Cancel',
-      String ok = 'Ok'}) {
-    return showDialog<bool>(
-        context: currentState!.context,
-        builder: (context) => AlertDialog(
-              title: Text(title),
-              content: Text(message),
-              actions: [
-                TextButton(
-                    onPressed: () => pop(false, context), child: Text(cancel)),
-                TextButton(onPressed: () => pop(true, context), child: Text(ok))
-              ],
-            ));
-  }
-}
-
-mixin HasTbContext {
-  late final TbContext _tbContext;
-
-  void setTbContext(TbContext tbContext) {
-    _tbContext = tbContext;
-  }
-
-  void setupCurrentState(TbContextState currentState) {
-    if (_tbContext.currentState != null) {
-      ModalRoute.of(_tbContext.currentState!.context)
-          ?.removeScopedWillPopCallback(_tbContext.willPop);
-    }
-    _tbContext.currentState = currentState;
-    if (_tbContext.currentState != null) {
-      ModalRoute.of(_tbContext.currentState!.context)
-          ?.addScopedWillPopCallback(_tbContext.willPop);
-    }
-    if (_tbContext._closeMainFirst) {
-      _tbContext._closeMainFirst = false;
-      if (_tbContext.currentState != null) {
-        _tbContext.currentState!.closeMainFirst = true;
-      }
-    }
-  }
-
-  void setupTbContext(TbContextState currentState) {
-    _tbContext = currentState.widget.tbContext;
-  }
-
-  TbContext get tbContext => _tbContext;
-
-  TbLogger get log => _tbContext.log;
-
-  bool get isPhysicalDevice => _tbContext.isPhysicalDevice();
-
-  WidgetActionHandler get widgetActionHandler => _tbContext.widgetActionHandler;
-
-  ValueNotifier<bool> get loadingNotifier => _tbContext._isLoadingNotifier;
-
-  ThingsboardClient get tbClient => _tbContext.tbClient;
-
-  bool hasGenericPermission(Resource resource, Operation operation) =>
-      _tbContext.hasGenericPermission(resource, operation);
-
-  Future<void> initTbContext() async {
-    await _tbContext.init();
-  }
-
-  Future<dynamic> navigateTo(String path,
-          {bool replace = false, bool clearStack = false}) =>
-      _tbContext.navigateTo(path, replace: replace, clearStack: clearStack);
-
-  void pop<T>([T? result, BuildContext? context]) =>
-      _tbContext.pop<T>(result, context);
-
-  Future<bool> maybePop<T extends Object?>([T? result]) =>
-      _tbContext.maybePop<T>(result);
-
-  Future<void> navigateToDashboard(String dashboardId,
-          {String? dashboardTitle,
-          String? state,
-          bool? hideToolbar,
-          bool animate = true}) =>
-      _tbContext.navigateToDashboard(dashboardId,
-          dashboardTitle: dashboardTitle,
-          state: state,
-          hideToolbar: hideToolbar,
-          animate: animate);
-
-  Future<bool?> confirm(
-          {required String title,
-          required String message,
-          String cancel = 'Cancel',
-          String ok = 'Ok'}) =>
-      _tbContext.confirm(
-          title: title, message: message, cancel: cancel, ok: ok);
-
-  void hideNotification() => _tbContext.hideNotification();
-
-  void showErrorNotification(String message, {Duration? duration}) =>
-      _tbContext.showErrorNotification(message, duration: duration);
-
-  void showInfoNotification(String message, {Duration? duration}) =>
-      _tbContext.showInfoNotification(message, duration: duration);
-
-  void showWarnNotification(String message, {Duration? duration}) =>
-      _tbContext.showWarnNotification(message, duration: duration);
-
-  void showSuccessNotification(String message, {Duration? duration}) =>
-      _tbContext.showSuccessNotification(message, duration: duration);
-
-  void subscribeRouteObserver(TbPageState pageState) {
-    _tbContext.routeObserver
-        .subscribe(pageState, ModalRoute.of(pageState.context) as PageRoute);
-  }
-
-  void unsubscribeRouteObserver(TbPageState pageState) {
-    _tbContext.routeObserver.unsubscribe(pageState);
   }
 }

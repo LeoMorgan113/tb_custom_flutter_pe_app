@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:thingsboard_app/core/context/tb_context.dart';
 import 'package:thingsboard_app/core/context/tb_context_widget.dart';
 import 'package:thingsboard_app/core/entity/entities_base.dart';
 
-import 'tenants_list.dart';
+import 'package:thingsboard_app/modules/tenant/tenants_list.dart';
 
 class TenantsWidget extends TbContextWidget {
-  TenantsWidget(TbContext tbContext) : super(tbContext);
+  TenantsWidget(super.tbContext, {super.key});
 
   @override
-  _TenantsWidgetState createState() => _TenantsWidgetState();
+  State<StatefulWidget> createState() => _TenantsWidgetState();
 }
 
 class _TenantsWidgetState extends TbContextState<TenantsWidget> {
@@ -17,7 +16,9 @@ class _TenantsWidgetState extends TbContextState<TenantsWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return TenantsList(tbContext, _pageLinkController);
+    return SafeArea(
+      child: TenantsList(tbContext, _pageLinkController),
+    );
   }
 
   @override

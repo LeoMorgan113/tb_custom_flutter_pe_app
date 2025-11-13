@@ -1,11 +1,11 @@
-abstract class ThingsboardAppConstants {
-  static final thingsBoardApiEndpoint = 'https://thingsboard.cloud';
-  static final thingsboardOAuth2CallbackUrlScheme =
-      'org.thingsboard.pe.app.auth';
-
-  /// Not for production (only for debugging)
-  static final thingsboardOAuth2AppSecret = 'Your app secret here';
-
-  /// Not for production (only for debugging)
-  static final thingsboardSignUpAppSecret = 'Your sign up app secret here';
+abstract final class ThingsboardAppConstants {
+  static const thingsBoardApiEndpoint =
+      String.fromEnvironment('thingsboardApiEndpoint');
+  static const thingsboardOAuth2CallbackUrlScheme =
+      String.fromEnvironment('thingsboardOAuth2CallbackUrlScheme');
+  static const thingsboardIOSAppSecret =
+      String.fromEnvironment('thingsboardIosAppSecret');
+  static const thingsboardAndroidAppSecret =
+      String.fromEnvironment('thingsboardAndroidAppSecret');
+  static const ignoreRegionSelection = thingsBoardApiEndpoint != '';
 }

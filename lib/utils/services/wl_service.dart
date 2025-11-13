@@ -1,15 +1,24 @@
+// ignore_for_file: parameter_assignments
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:thingsboard_app/config/themes/tb_theme_utils.dart';
 import 'package:thingsboard_app/config/themes/wl_theme_widget.dart';
 import 'package:thingsboard_app/constants/assets_path.dart';
+import 'package:thingsboard_app/core/auth/login/select_region/model/region.dart';
 import 'package:thingsboard_app/core/context/tb_context.dart';
+import 'package:thingsboard_app/thingsboard_client.dart';
 import 'package:thingsboard_app/utils/utils.dart';
-import 'package:thingsboard_pe_client/thingsboard_client.dart';
 
-const DEFAULT_LOGO_URL = 'LOGO-PE';
+const defaultLogoUrl = 'LOGO-PE';
 
 class WlService {
+
+  factory WlService(TbContext tbContext) {
+    return WlService._internal(tbContext);
+  }
+
+  WlService._internal(this._tbContext);
   static final _defaultWLParams = _createDefaultWlParams();
   static final _defaultThemeData =
       TbThemeUtils.createTheme(_defaultWLParams.paletteSettings);
@@ -19,38 +28,38 @@ class WlService {
       TbThemeUtils.createTheme(_defaultLoginWlParams.paletteSettings);
 
   static final _defaultLogo = SvgPicture.asset(
-      ThingsboardImage.thingsBoardWithTitle,
-      height: 36 / 3 * 2,
-      color: TbThemeUtils.tbPrimary,
-      semanticsLabel: 'ThingsBoard Logo');
+    ThingsboardImage.thingsBoardWithTitle,
+    height: 36 / 3 * 2,
+    colorFilter: ColorFilter.mode(TbThemeUtils.tbPrimary, BlendMode.srcIn),
+    semanticsLabel: 'ThingsBoard Logo',
+  );
 
   static final _defaultLoginLogo = SvgPicture.asset(
-      ThingsboardImage.thingsBoardWithTitle,
-      height: 50 / 3 * 2,
-      color: TbThemeUtils.tbPrimary,
-      semanticsLabel: 'ThingsBoard Logo');
+    ThingsboardImage.thingsBoardWithTitle,
+    height: 50 / 3 * 2,
+    colorFilter: ColorFilter.mode(TbThemeUtils.tbPrimary, BlendMode.srcIn),
+    semanticsLabel: 'ThingsBoard Logo',
+  );
 
   static WhiteLabelingParams _createDefaultWlParams() => WhiteLabelingParams(
-      logoImageUrl: DEFAULT_LOGO_URL,
-      logoImageChecksum: 'ce227e602495446086a0672d3a2f1d899203dd4d',
-      logoImageHeight: 36,
-      appTitle: 'ThingsBoard PE',
-      favicon: Favicon(url: 'thingsboard.ico', type: 'image/x-icon'),
-      faviconChecksum: '87059b3055f7ce8b8e43f18f470ed895a316f5ec',
-      paletteSettings: PaletteSettings(
-          primaryPalette: Palette(type: 'tb-primary'),
-          accentPalette: Palette(type: 'tb-accent')),
-      helpLinkBaseUrl: 'https://thingsboard.io',
-      enableHelpLinks: true,
-      showNameVersion: false,
-      platformName: 'ThingsBoard',
-      platformVersion: '3.4.1PE');
+        logoImageUrl: defaultLogoUrl,
+        logoImageHeight: 36,
+        appTitle: 'ThingsBoard PE',
+        favicon: Favicon(url: 'thingsboard.ico'),
+        paletteSettings: PaletteSettings(
+          primaryPalette: Palette(type: 'tb-primary'),// translate-me-ignore
+          accentPalette: Palette(type: 'tb-accent'), // translate-me-ignore
+        ),
+        helpLinkBaseUrl: 'https://thingsboard.io',
+        enableHelpLinks: true,
+        showNameVersion: false,
+        platformName: 'ThingsBoard',
+        platformVersion: '3.4.1PE',
+      );
 
   static LoginWhiteLabelingParams _createDefaultLoginWlParams() {
-    var loginWlParams =
+    final loginWlParams =
         LoginWhiteLabelingParams.fromJson(_defaultWLParams.toJson());
-    loginWlParams.logoImageChecksum = _defaultWLParams.logoImageChecksum;
-    loginWlParams.faviconChecksum = _defaultWLParams.faviconChecksum;
     loginWlParams.logoImageHeight = 50;
     loginWlParams.pageBackgroundColor = '#eee';
     loginWlParams.darkForeground = false;
@@ -58,7 +67,10 @@ class WlService {
   }
 
   static T _mergeDefaults<T extends WhiteLabelingParams>(
-      bool isLogin, T? wlParams, T? targetDefaultWlParams) {
+    bool isLogin,
+    T? wlParams,
+    T? targetDefaultWlParams,
+  ) {
     if (targetDefaultWlParams == null) {
       if (isLogin) {
         targetDefaultWlParams = _defaultLoginWlParams as T;
@@ -75,8 +87,8 @@ class WlService {
     }
 
     if (isLogin) {
-      var loginWlParams = wlParams as LoginWhiteLabelingParams;
-      var targetDefaultLoginWlParams =
+      final loginWlParams = wlParams as LoginWhiteLabelingParams;
+      final targetDefaultLoginWlParams =
           targetDefaultWlParams as LoginWhiteLabelingParams;
       if (loginWlParams.pageBackgroundColor == null &&
           targetDefaultLoginWlParams.pageBackgroundColor != null) {
@@ -84,21 +96,15 @@ class WlService {
             targetDefaultLoginWlParams.pageBackgroundColor;
       }
     }
-    if (_isEmpty(wlParams.logoImageUrl) &&
-        _isEmpty(wlParams.logoImageChecksum)) {
+    if (_isEmpty(wlParams.logoImageUrl)) {
       wlParams.logoImageUrl = targetDefaultWlParams.logoImageUrl;
-      wlParams.logoImageChecksum = targetDefaultWlParams.logoImageChecksum;
     }
-    if (wlParams.logoImageHeight == null) {
-      wlParams.logoImageHeight = targetDefaultWlParams.logoImageHeight;
-    }
+    wlParams.logoImageHeight ??= targetDefaultWlParams.logoImageHeight;
     if (_isEmpty(wlParams.appTitle)) {
       wlParams.appTitle = targetDefaultWlParams.appTitle;
     }
-    if ((wlParams.favicon == null || _isEmpty(wlParams.favicon?.url)) &&
-        _isEmpty(wlParams.faviconChecksum)) {
+    if (wlParams.favicon == null || _isEmpty(wlParams.favicon?.url)) {
       wlParams.favicon = targetDefaultWlParams.favicon;
-      wlParams.faviconChecksum = targetDefaultWlParams.faviconChecksum;
     }
     if (wlParams.paletteSettings == null) {
       wlParams.paletteSettings = targetDefaultWlParams.paletteSettings;
@@ -122,15 +128,9 @@ class WlService {
         targetDefaultWlParams.enableHelpLinks != null) {
       wlParams.enableHelpLinks = targetDefaultWlParams.enableHelpLinks;
     }
-    if (wlParams.showNameVersion == null) {
-      wlParams.showNameVersion = targetDefaultWlParams.showNameVersion;
-    }
-    if (wlParams.platformName == null) {
-      wlParams.platformName = targetDefaultWlParams.platformName;
-    }
-    if (wlParams.platformVersion == null) {
-      wlParams.platformVersion = targetDefaultWlParams.platformVersion;
-    }
+    wlParams.showNameVersion ??= targetDefaultWlParams.showNameVersion;
+    wlParams.platformName ??= targetDefaultWlParams.platformName;
+    wlParams.platformVersion ??= targetDefaultWlParams.platformVersion;
     return wlParams;
   }
 
@@ -157,12 +157,6 @@ class WlService {
   WhiteLabelingParams? _wlParams;
   Widget? _logo;
   ThemeData? _themeData;
-
-  factory WlService(TbContext tbContext) {
-    return WlService._internal(tbContext);
-  }
-
-  WlService._internal(this._tbContext);
 
   Future<void> updateWhiteLabeling() async {
     if (_tbContext.isAuthenticated) {
@@ -209,22 +203,16 @@ class WlService {
   String get platformNameAndVersion => '$platformName v.$platformVersion';
 
   bool get isCustomLogo => _isUserWlMode
-      ? _wlParams != null && _wlParams?.logoImageUrl != DEFAULT_LOGO_URL
+      ? _wlParams != null && _wlParams?.logoImageUrl != defaultLogoUrl
       : _loginWlParams != null &&
-          _loginWlParams?.logoImageUrl != DEFAULT_LOGO_URL;
+          _loginWlParams?.logoImageUrl != defaultLogoUrl;
 
   Future<void> _loadLoginWhiteLabelingParams() async {
-    var storedLogoImageChecksum =
-        await _tbContext.storage.getItem('login_logo_image_checksum');
-    var storedFaviconChecksum =
-        await _tbContext.storage.getItem('login_favicon_checksum');
     var loginWlParams = await _tbContext.tbClient
         .getWhiteLabelingService()
-        .getLoginWhiteLabelParams(
-            logoImageChecksum: storedLogoImageChecksum,
-            faviconChecksum: storedFaviconChecksum);
+        .getLoginWhiteLabelParams();
     if (loginWlParams.platformVersion == null) {
-      var platformVersion = _tbContext.tbClient.getPlatformVersion();
+      final platformVersion = _tbContext.tbClient.getPlatformVersion();
       if (platformVersion != null) {
         loginWlParams.platformVersion = platformVersion.versionString();
       }
@@ -235,7 +223,13 @@ class WlService {
       _loginWlParams = loginWlParams;
       _loginThemeData =
           TbThemeUtils.createTheme(_loginWlParams!.paletteSettings);
-      await _updateImages(_loginWlParams!, _loginThemeData!, true);
+      await _updateImages(
+        _tbContext.currentState!.context,
+        _tbContext.tbClient,
+        _loginWlParams!,
+        _loginThemeData!,
+        true,
+      );
       loginWlChanged = true;
     }
     if (loginWlChanged || _isUserWlMode) {
@@ -245,17 +239,11 @@ class WlService {
   }
 
   Future<void> _loadUserWhiteLabelingParams() async {
-    var storedLogoImageChecksum =
-        await _tbContext.storage.getItem('user_logo_image_checksum');
-    var storedFaviconChecksum =
-        await _tbContext.storage.getItem('user_favicon_checksum');
     var userWlParams = await _tbContext.tbClient
         .getWhiteLabelingService()
-        .getWhiteLabelParams(
-            logoImageChecksum: storedLogoImageChecksum,
-            faviconChecksum: storedFaviconChecksum);
+        .getWhiteLabelParams();
     if (userWlParams.platformVersion == null) {
-      var platformVersion = _tbContext.tbClient.getPlatformVersion();
+      final platformVersion = _tbContext.tbClient.getPlatformVersion();
       if (platformVersion != null) {
         userWlParams.platformVersion = platformVersion.versionString();
       }
@@ -265,7 +253,13 @@ class WlService {
     if (!_wlIsEqual(_wlParams, userWlParams)) {
       _wlParams = userWlParams;
       _themeData = TbThemeUtils.createTheme(_wlParams!.paletteSettings);
-      await _updateImages(_wlParams!, _themeData!, false);
+      await _updateImages(
+        _tbContext.currentState!.context,
+        _tbContext.tbClient,
+        _wlParams!,
+        _themeData!,
+        false,
+      );
       userWlChanged = true;
     }
     if (userWlChanged || !_isUserWlMode) {
@@ -275,54 +269,39 @@ class WlService {
   }
 
   Future<void> _updateImages(
-      WhiteLabelingParams wlParams, ThemeData themeData, bool isLogin) async {
-    String prefix = isLogin ? 'login' : 'user';
-    var storedLogoImageChecksum =
-        await _tbContext.storage.getItem(prefix + '_logo_image_checksum');
-    var storedFaviconChecksum =
-        await _tbContext.storage.getItem(prefix + '_favicon_checksum');
-    var logoImageChecksum = wlParams.logoImageChecksum;
-    if (logoImageChecksum != null &&
-        storedLogoImageChecksum != logoImageChecksum) {
-      var logoImageUrl = wlParams.logoImageUrl;
-      await _tbContext.storage
-          .setItem(prefix + '_logo_image_checksum', logoImageChecksum);
-      await _tbContext.storage
-          .setItem(prefix + '_logo_image_url', logoImageUrl!);
-    } else {
-      wlParams.logoImageUrl =
-          await _tbContext.storage.getItem(prefix + '_logo_image_url');
-    }
+    BuildContext context,
+    ThingsboardClient tbClient,
+    WhiteLabelingParams wlParams,
+    ThemeData themeData,
+    bool isLogin,
+  ) async {
     Widget image;
-    double height = wlParams.logoImageHeight!.toDouble() / 3 * 2;
-    if (wlParams.logoImageUrl == DEFAULT_LOGO_URL) {
-      image = SvgPicture.asset(ThingsboardImage.thingsBoardWithTitle,
-          height: height,
-          color: themeData.primaryColor,
-          semanticsLabel: 'ThingsBoard Logo');
+    final double height = wlParams.logoImageHeight!.toDouble() / 3 * 2;
+    if (wlParams.logoImageUrl == defaultLogoUrl) {
+      Region? region;
+
+      image = SvgPicture.asset(
+        region == Region.europe
+            ? ThingsboardImage.thingsBoardEUWithTitle
+            : ThingsboardImage.thingsBoardWithTitle,
+        height: height,
+        colorFilter: ColorFilter.mode(themeData.primaryColor, BlendMode.srcIn),
+        semanticsLabel: 'ThingsBoard Logo',
+      );
     } else {
-      image = Utils.imageFromBase64(wlParams.logoImageUrl!,
-          height: height, semanticLabel: 'ThingsBoard Logo');
+      image = Utils.imageFromTbImage(
+        context,
+        tbClient,
+        wlParams.logoImageUrl,
+        height: height,
+        semanticLabel: 'ThingsBoard Logo',
+        loginLogo: isLogin,
+      );
     }
     if (isLogin) {
       _loginLogo = image;
     } else {
       _logo = image;
-    }
-    var faviconChecksum = wlParams.faviconChecksum;
-    if (faviconChecksum != null && storedFaviconChecksum != faviconChecksum) {
-      var favicon = wlParams.favicon!;
-      await _tbContext.storage
-          .setItem(prefix + '_favicon_checksum', faviconChecksum);
-      await _tbContext.storage.setItem(prefix + '_favicon_url', favicon.url!);
-      if (favicon.type != null) {
-        await _tbContext.storage
-            .setItem(prefix + '_favicon_type', favicon.type!);
-      }
-    } else {
-      wlParams.favicon = Favicon(
-          url: await _tbContext.storage.getItem(prefix + '_favicon_url'),
-          type: await _tbContext.storage.getItem(prefix + '_favicon_type'));
     }
   }
 }

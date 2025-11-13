@@ -1,24 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:thingsboard_app/core/context/tb_context_widget.dart';
 import 'package:thingsboard_app/generated/l10n.dart';
 import 'package:thingsboard_app/modules/profile/change_password_page.dart';
+import 'package:thingsboard_app/thingsboard_client.dart';
 import 'package:thingsboard_app/widgets/tb_app_bar.dart';
-
-import 'package:thingsboard_app/core/context/tb_context.dart';
-import 'package:thingsboard_app/core/context/tb_context_widget.dart';
 import 'package:thingsboard_app/widgets/tb_progress_indicator.dart';
-import 'package:thingsboard_pe_client/thingsboard_client.dart';
 
 class ProfilePage extends TbPageWidget {
+  ProfilePage(
+    super.tbContext, {
+    bool fullscreen = false,
+    super.key,
+  }) : _fullscreen = fullscreen;
   final bool _fullscreen;
 
-  ProfilePage(TbContext tbContext, {bool fullscreen = false})
-      : _fullscreen = fullscreen,
-        super(tbContext);
-
   @override
-  _ProfilePageState createState() => _ProfilePageState();
+  State<StatefulWidget> createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends TbPageState<ProfilePage> {
@@ -35,102 +34,109 @@ class _ProfilePageState extends TbPageState<ProfilePage> {
   }
 
   @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Colors.white,
-        appBar: TbAppBar(
-          tbContext,
-          title: const Text('Profile'),
-          actions: [
+      backgroundColor: Colors.white,
+      appBar: TbAppBar(
+        tbContext,
+        title:  Text(S.of(context).profile),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.check),
+            onPressed: () {
+              _saveProfile();
+            },
+          ),
+          if (widget._fullscreen)
             IconButton(
-                icon: Icon(Icons.check),
-                onPressed: () {
-                  _saveProfile();
-                }),
-            if (widget._fullscreen)
-              IconButton(
-                  icon: Icon(Icons.logout),
-                  onPressed: () {
-                    tbClient.logout();
-                  })
-          ],
-        ),
-        body: Stack(
-          children: [
-            SizedBox.expand(
-              child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: SingleChildScrollView(
-                      child: FormBuilder(
-                    key: _profileFormKey,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          SizedBox(height: 16),
-                          FormBuilderTextField(
-                            name: 'email',
-                            validator: FormBuilderValidators.compose([
-                              FormBuilderValidators.required(
-                                  errorText:
-                                      '${S.of(context).emailRequireText}'),
-                              FormBuilderValidators.email(
-                                  errorText:
-                                      '${S.of(context).emailInvalidText}')
-                            ]),
-                            decoration: InputDecoration(
-                                border: OutlineInputBorder(),
-                                labelText: '${S.of(context).emailStar}'),
-                          ),
-                          SizedBox(height: 24),
-                          FormBuilderTextField(
-                            name: 'firstName',
-                            decoration: InputDecoration(
-                                border: OutlineInputBorder(),
-                                labelText: '${S.of(context).firstNameUpper}'),
-                          ),
-                          SizedBox(height: 24),
-                          FormBuilderTextField(
-                            name: 'lastName',
-                            decoration: InputDecoration(
-                                border: OutlineInputBorder(),
-                                labelText: '${S.of(context).lastNameUpper}'),
-                          ),
-                          SizedBox(height: 24),
-                          OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                  padding: EdgeInsets.all(16),
-                                  alignment: Alignment.centerLeft),
-                              onPressed: () {
-                                _changePassword();
-                              },
-                              child: Center(
-                                  child:
-                                      Text('${S.of(context).changePassword}')))
-                        ]),
-                  ))),
+              icon: const Icon(Icons.logout),
+              onPressed: () {
+                tbContext.logout();
+              },
             ),
-            ValueListenableBuilder<bool>(
-                valueListenable: _isLoadingNotifier,
-                builder: (BuildContext context, bool loading, child) {
-                  if (loading) {
-                    return SizedBox.expand(
-                        child: Container(
-                      color: Color(0x99FFFFFF),
-                      child: Center(
-                          child: TbProgressIndicator(tbContext, size: 50.0)),
-                    ));
-                  } else {
-                    return SizedBox.shrink();
-                  }
-                })
-          ],
-        ));
+        ],
+      ),
+      body: Stack(
+        children: [
+          SizedBox.expand(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: SingleChildScrollView(
+                child: FormBuilder(
+                  key: _profileFormKey,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 16),
+                      FormBuilderTextField(
+                        name: 'email',
+                        validator: FormBuilderValidators.compose([
+                          FormBuilderValidators.required(
+                            errorText: S.of(context).emailRequireText,
+                          ),
+                          FormBuilderValidators.email(
+                            errorText: S.of(context).emailInvalidText,
+                          ),
+                        ]),
+                        decoration: InputDecoration(
+                          border: const OutlineInputBorder(),
+                          labelText: '${S.of(context).email} *',
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      FormBuilderTextField(
+                        name: 'firstName',
+                        decoration: InputDecoration(
+                          border: const OutlineInputBorder(),
+                          labelText: S.of(context).firstNameUpper,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      FormBuilderTextField(
+                        name: 'lastName',
+                        decoration: InputDecoration(
+                          border: const OutlineInputBorder(),
+                          labelText: S.of(context).lastNameUpper,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.all(16),
+                          alignment: Alignment.centerLeft,
+                        ),
+                        onPressed: () {
+                          _changePassword();
+                        },
+                        child: Center(
+                          child: Text(S.of(context).changePassword),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          ValueListenableBuilder<bool>(
+            valueListenable: _isLoadingNotifier,
+            builder: (BuildContext context, bool loading, child) {
+              if (loading) {
+                return SizedBox.expand(
+                  child: ColoredBox(
+                    color: const Color(0x99FFFFFF),
+                    child:  Center(child: TbProgressIndicator(tbContext, size: 50.0)),
+                  ),
+                );
+              } else {
+                return const SizedBox.shrink();
+              }
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _loadUser() async {
@@ -140,11 +146,11 @@ class _ProfilePageState extends TbPageState<ProfilePage> {
     _isLoadingNotifier.value = false;
   }
 
-  _setUser() {
+  void _setUser() {
     _profileFormKey.currentState?.patchValue({
       'email': _currentUser!.email,
       'firstName': _currentUser!.firstName ?? '',
-      'lastName': _currentUser!.lastName ?? ''
+      'lastName': _currentUser!.lastName ?? '',
     });
   }
 
@@ -152,30 +158,39 @@ class _ProfilePageState extends TbPageState<ProfilePage> {
     if (_currentUser != null) {
       FocusScope.of(context).unfocus();
       if (_profileFormKey.currentState?.saveAndValidate() ?? false) {
-        var formValue = _profileFormKey.currentState!.value;
-        _currentUser!.email = formValue['email'];
-        _currentUser!.firstName = formValue['firstName'];
-        _currentUser!.lastName = formValue['lastName'];
+        final formValue = _profileFormKey.currentState!.value;
+        _currentUser!.email = formValue['email'].toString();
+        _currentUser!.firstName = formValue['firstName'].toString();
+        _currentUser!.lastName = formValue['lastName'].toString();
         _isLoadingNotifier.value = true;
-        _currentUser = await tbClient.getUserService().saveUser(_currentUser!);
-        tbContext.userDetails = _currentUser;
-        _setUser();
-        await Future.delayed(Duration(milliseconds: 300));
-        _isLoadingNotifier.value = false;
-        showSuccessNotification('${S.of(context).profileSuccessNotification}',
-            duration: Duration(milliseconds: 1500));
-        showSuccessNotification('${S.of(context).profileSuccessNotification}',
-            duration: Duration(milliseconds: 1500));
+        try {
+          _currentUser =
+              await tbClient.getUserService().saveUser(_currentUser!);
+          tbContext.userDetails = _currentUser;
+          _setUser();
+          await Future.delayed(const Duration(milliseconds: 300));
+          _isLoadingNotifier.value = false;
+          if (mounted) {
+            overlayService.showSuccessNotification(
+            (_) =>  S.of(context).profileSuccessNotification,
+              duration: const Duration(milliseconds: 1500),
+            );
+          }
+        } catch (_) {
+          _isLoadingNotifier.value = false;
+        }
       }
     }
   }
 
-  _changePassword() async {
-    var res = await tbContext
-        .showFullScreenDialog<bool>(new ChangePasswordPage(tbContext));
-    if (res == true) {
-      showSuccessNotification('${S.of(context).passwordSuccessNotification}',
-          duration: Duration(milliseconds: 1500));
+  Future<void> _changePassword() async {
+    final res = await tbContext
+        .showFullScreenDialog<bool>(ChangePasswordPage(tbContext));
+    if (res == true && mounted) {
+      overlayService.showSuccessNotification(
+      (_) =>   S.of(context).passwordSuccessNotification,
+        duration: const Duration(milliseconds: 1500),
+      );
     }
   }
 }
